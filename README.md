@@ -84,7 +84,7 @@ The scoring is based on the following metrics:
 
 ## Participation Guide
 
-1. Download the participant template (`sample_code_submission.zip`).
+1. Download the participant template (`solution.zip`).
     
 2. Implement the `ECGCompressor` class in `ecg_model.py`.
     
