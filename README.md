@@ -22,11 +22,12 @@ ECG_Compression_Benchmark/
 │   ├── scoring.py           # Script to compute scores
 │   └── metadata.yaml        # Configuration file
 ├── pages/                   # Documentation pages
-├── participate.md           # Seed data description
-├── terms.md                 # Terms and conditions
-├── timeline.md              # Timeline
-├── sample_code_submission/  # Participant code example
-└── competition.yaml         # Global configuration file
+|   ├── data.md           
+|   ├── terms.md             # Terms and conditions
+|   ├── overview.md              
+|   ├── evaluation/
+├── competition.yaml        # Global configuration file
+└──      
 ```
 ## Quick Start
 
