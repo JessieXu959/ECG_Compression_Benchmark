@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Data Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-good { color: #28a745; }
+        .status-bad { color: #dc3545; }
+        .status-info { color: #007bff; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Frontend Data Verification</h1>
+
+    <div class="test-section">
+        <h2>Backend Connection Test</h2>
+        <button onclick="testBackendConnection()">Test Backend Health</button>
+        <div id="backendResults" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Demo Data Clearing Test</h2>
+        <button onclick="testDemoDataClearing()">Check localStorage</button>
+        <div id="demoDataResults" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>API Endpoints Test</h2>
+        <button onclick="testApiEndpoints()">Test All Endpoints</button>
+        <div id="apiResults" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Real Data Test</h2>
+        <button onclick="testRealDataFlow()">Test Registration → Login → Data</button>
+        <div id="realDataResults" class="results"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        async function testBackendConnection() {
+            const results = document.getElementById('backendResults');
+            results.innerHTML = 'Testing backend connection...';
+
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `✅ Backend is healthy!
+Status: ${data.status}
+Message: ${data.message}`;
+                    results.className = 'results status-good';
+                } else {
+                    results.innerHTML = `❌ Backend health check failed
+Status: ${response.status}`;
+                    results.className = 'results status-bad';
+                }
+            } catch (error) {
+                results.innerHTML = `❌ Connection failed: ${error.message}`;
+                results.className = 'results status-bad';
+            }
+        }
+
+        function testDemoDataClearing() {
+            const results = document.getElementById('demoDataResults');
+
+            const relevantKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (
+                    key.includes('submissions') ||
+                    key.includes('personalSubmissions') ||
+                    key === 'highScore' ||
+                    key.includes('leaderboard')
+                )) {
+                    relevantKeys.push(key);
+                }
+            }
+
+            if (relevantKeys.length === 0) {
+                results.innerHTML = '✅ No demo data found in localStorage!';
+                results.className = 'results status-good';
+            } else {
+                results.innerHTML = `❌ Found demo data in localStorage:
+${relevantKeys.join('\n')}`;
+                results.className = 'results status-bad';
+            }
+        }
+
+        async function testApiEndpoints() {
+            const results = document.getElementById('apiResults');
+            results.innerHTML = 'Testing API endpoints...';
+
+            const endpoints = [
+                { name: 'Leaderboard', url: `${API_BASE_URL}/leaderboard` },
+                { name: 'Health', url: 'http://localhost:8000/health' }
+            ];
+
+            let testResults = '';
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint.url);
+                    if (response.ok) {
+                        testResults += `✅ ${endpoint.name}: OK\n`;
+                    } else {
+                        testResults += `❌ ${endpoint.name}: ${response.status}\n`;
+                    }
+                } catch (error) {
+                    testResults += `❌ ${endpoint.name}: ${error.message}\n`;
+                }
+            }
+
+            results.innerHTML = testResults;
+            results.className = 'results status-info';
+        }
+
+        async function testRealDataFlow() {
+            const results = document.getElementById('realDataResults');
+            results.innerHTML = 'Testing real data flow...';
+
+            const testTeam = `TestTeam_${Date.now()}`;
+            const testEmail = `test${Date.now()}@example.com`;
+            const testPassword = 'TestPass123!';
+
+            let output = '';
+
+            try {
+                // Test registration
+                output += '1. Testing registration...\n';
+                const registerResponse = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        teamName: testTeam,
+                        email: testEmail,
+                        password: testPassword
+                    })
+                });
+
+                if (registerResponse.ok) {
+                    const registerData = await registerResponse.json();
+                    const token = registerData.access_token;
+                    output += '✅ Registration successful\n';
+
+                    // Test user submissions (should be empty)
+                    output += '2. Testing empty submissions...\n';
+                    const submissionsResponse = await fetch(`${API_BASE_URL}/user-submissions/${testTeam}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (submissionsResponse.ok) {
+                        const submissionsData = await submissionsResponse.json();
+                        const submissions = submissionsData.submissions || [];
+
+                        if (submissions.length === 0) {
+                            output += '✅ New user has no submissions (correct)\n';
+                        } else {
+                            output += `❌ New user has ${submissions.length} submissions (incorrect)\n`;
+                        }
+                    } else {
+                        output += `❌ Failed to get submissions: ${submissionsResponse.status}\n`;
+                    }
+
+                    // Test leaderboard
+                    output += '3. Testing leaderboard access...\n';
+                    const leaderboardResponse = await fetch(`${API_BASE_URL}/leaderboard`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (leaderboardResponse.ok) {
+                        const leaderboardData = await leaderboardResponse.json();
+                        output += `✅ Leaderboard accessible, found ${leaderboardData.results?.length || 0} entries\n`;
+                    } else {
+                        output += `❌ Leaderboard failed: ${leaderboardResponse.status}\n`;
+                    }
+
+                } else {
+                    const errorData = await registerResponse.json();
+                    output += `❌ Registration failed: ${errorData.detail || registerResponse.status}\n`;
+                }
+
+            } catch (error) {
+                output += `❌ Test failed: ${error.message}\n`;
+            }
+
+            results.innerHTML = output;
+            results.className = 'results status-info';
+        }
+
+        // Auto-run basic tests on load
+        window.onload = function() {
+            testBackendConnection();
+            testDemoDataClearing();
+        };
+    </script>
+</body>
+</html>
