@@ -1,0 +1,5 @@
+<!-- SVG placeholder for CR formula -->
+<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" fill="#f0f0f0" stroke="#ccc"/>
+  <text x="100" y="30" text-anchor="middle" dy="0.3em" font-family="Arial" font-size="14">CR = Original Size / Compressed Size</text>
+</svg>

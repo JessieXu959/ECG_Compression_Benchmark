@@ -1,0 +1,110 @@
+# competition.yaml
+title: "ECG Compression Challenge"
+version: 2  # 必须是 2，表示这是一个 Codabench bundle
+description: "This challenge evaluates ECG compression/reconstruction algorithms using PRD & CR metrics."
+image: ModelingLab.png  # 你存放的LOGO/图片文件，可省略
+registration_auto_approve: True
+docker_image: codalab/codalab-legacy:py39  # 评测使用的Docker环境
+enable_detailed_results: True
+
+# ---------- 页面设置 -----------
+# 可选：如果你在 pages/ 里有 terms.md, overview.md, data.md, evaluation.md，可以在这配置
+terms: pages/terms.md
+pages:
+  - title: Overview
+    file: pages/overview.md
+  - title: Data
+    file: pages/data.md
+  - title: Evaluation
+    file: pages/evaluation.md
+
+# ---------- 定义 Task (和 Phase) -----------
+tasks:
+  - index: 0
+    name: "Development Task"
+    description: "Public data for participants to develop and test their ECG compression solutions."
+    is_public: false
+    input_data: "Development Phase/input_data"         # 开发阶段的公开数据
+    reference_data: "Development Phase/reference_data" # 其对应的参考真值
+    scoring_program: "scoring_program"                 # 目录名，包含 scoring.py
+    ingestion_program: "ingestion_program"             # 目录名，包含 ingestion.py
+
+  - index: 1
+    name: "Final Task"
+    description: "Hidden data for the final evaluation; results revealed at the end."
+    is_public: false
+    input_data: "final_phase/input_data"
+    reference_data: "final_phase/reference_data"
+    scoring_program: "scoring_program"
+    ingestion_program: "ingestion_program"
+
+# 若需要提供 baseline 或 sample solution，就可在这里加 solutions: ...
+solutions: []
+
+# ---------- 配置2个 Phase -----------
+phases:
+  - index: 0
+    name: "Development"
+    description: "Development phase: participants can submit multiple times to see real-time feedback."
+    start: 1-1-2024
+    end: 1-30-2026
+    max_submissions_per_day: 5
+    max_submissions: 100
+    execution_time_limit: 600
+    tasks:
+      - 0   # 关联到上面 tasks[0] (Development Task)
+    solutions: []
+    starting_kit: "starting_kit"  # 若有示例代码放在 starting_kit/ 中
+    public_data: "Development Phase/input_data"
+
+  - index: 1
+    name: "Final"
+    description: "Final phase: no more code changes, last submissions from development phase are cloned for final scoring."
+    start: 2-1-2026
+    max_submissions_per_day: 0
+    max_submissions: 0
+    execution_time_limit: 600
+    tasks:
+      - 1   # 关联到上面 tasks[1] (Final Task)
+    solutions: []
+# ---------- Fact sheet可选，用于让选手在提交时填写一些信息 -----------
+fact_sheet:
+  method_name:
+    key: "method_name"
+    type: "text"
+    title: "Method Name"
+    selection: ""
+    is_required: "false"
+    is_on_leaderboard: "true"
+
+# ---------- Leaderboard 配置 -----------
+# 可以根据 scoring.py 输出的 key 来配置显示列
+leaderboards:
+  - index: 0
+    title: "Results"
+    key: "Results"
+    submission_rule: "Force_Last"
+    columns:
+      # 假设 scoring.py 会输出 "PhysioNet_MITBIH_rec117_5min" 和 "PhysioNet_MITBIH_rec119_5min" 两个字段
+      - title: "Score Rec117"
+        key: "PhysioNet_MITBIH_rec117_5min"
+        index: 0
+        sorting: desc
+
+      - title: "Score Rec119"
+        key: "PhysioNet_MITBIH_rec119_5min"
+        index: 1
+        sorting: desc
+
+      # 假设还有一个 overall_score
+      - title: "Overall Score"
+        key: "overall_score"
+        index: 2
+        sorting: desc
+
+      # 如果 scoring.py 里写了 duration
+      - title: "Duration"
+        key: "duration"
+        index: 3
+        sorting: asc
+
