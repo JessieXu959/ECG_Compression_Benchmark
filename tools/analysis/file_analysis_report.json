@@ -1,0 +1,520 @@
+{
+  "summary": {
+    "total_files": 194,
+    "core_files": 7,
+    "test_files": 20,
+    "zip_files": 33,
+    "duplicate_groups": 31,
+    "large_files": 12
+  },
+  "core_files": [
+    {
+      "path": ".\\main.py",
+      "size": 13956,
+      "type": "core"
+    },
+    {
+      "path": ".\\real_evaluation_system.py",
+      "size": 23928,
+      "type": "core"
+    },
+    {
+      "path": ".\\ecg-compression\\index.html",
+      "size": 31203,
+      "type": "core"
+    },
+    {
+      "path": ".\\ecg-compression\\scripts.js",
+      "size": 77965,
+      "type": "core"
+    },
+    {
+      "path": ".\\ecg-compression\\styles.css",
+      "size": 36228,
+      "type": "core"
+    },
+    {
+      "path": ".\\ecg-compression\\mini-backend\\main.py",
+      "size": 13956,
+      "type": "core"
+    },
+    {
+      "path": ".\\mini-backend\\main.py",
+      "size": 20199,
+      "type": "core"
+    }
+  ],
+  "test_files": [
+    {
+      "path": ".\\clear_demo_data.py",
+      "size": 4972,
+      "type": "test"
+    },
+    {
+      "path": ".\\create_test_user.py",
+      "size": 5238,
+      "type": "test"
+    },
+    {
+      "path": ".\\create_test_zip.py",
+      "size": 3743,
+      "type": "test"
+    },
+    {
+      "path": ".\\debug_evaluation_system.py",
+      "size": 6482,
+      "type": "test"
+    },
+    {
+      "path": ".\\debug_token.py",
+      "size": 3548,
+      "type": "test"
+    },
+    {
+      "path": ".\\demo_real_evaluation.py",
+      "size": 14644,
+      "type": "test"
+    },
+    {
+      "path": ".\\FRONTEND_TEST_GUIDE.md",
+      "size": 5194,
+      "type": "test"
+    },
+    {
+      "path": ".\\quick_system_check.py",
+      "size": 13982,
+      "type": "test"
+    },
+    {
+      "path": ".\\quick_test.py",
+      "size": 2594,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_algorithm.py",
+      "size": 1363,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_api.py",
+      "size": 6654,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_concurrent_submissions.py",
+      "size": 11214,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_data_persistence.py",
+      "size": 3582,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_new_features.py",
+      "size": 6931,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_optimized_solution.py",
+      "size": 2111,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_real_evaluation.py",
+      "size": 11466,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_token_fix.py",
+      "size": 5579,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_updated_solution.py",
+      "size": 1695,
+      "type": "test"
+    },
+    {
+      "path": ".\\test_upload_direct.py",
+      "size": 3539,
+      "type": "test"
+    },
+    {
+      "path": ".\\solution\\test_output.mat",
+      "size": 14664,
+      "type": "test"
+    }
+  ],
+  "zip_files": [
+    {
+      "path": ".\\ecg_compression_bundle.zip",
+      "size": 6294213,
+      "size_mb": 6.0
+    },
+    {
+      "path": ".\\test_algorithm.zip",
+      "size": 1485,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\test_solution.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\test_solution_new.zip",
+      "size": 2669,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\ecg-compression\\test_solution.zip",
+      "size": 22,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\03f6f7ac-a5ca-4127-8011-beec7ef401ef\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\0788ba3c-8071-461a-89a4-5c2178a6ec77\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\0f1c4b6d-1c73-4c24-ae56-a86c2bcaa981\\solution_updated.zip",
+      "size": 3724,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\1836d4da-d3f8-4180-88fc-88b9d58114dd\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\20e54e6f-e2e4-4b25-a793-7fbe300e6114\\solution.zip",
+      "size": 2692,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\23a76f06-8b85-437f-b7b4-db192e973a58\\solution_optimized.zip",
+      "size": 6056,
+      "size_mb": 0.01
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\29e00aee-e1cd-4244-b53b-6bd7b632cb33\\TeamA-ECG-Algo.zip",
+      "size": 3307,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\38dc84ff-5ed0-49de-9937-705fd9693317\\test_solution.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\479621bb-a453-44bd-8706-8a1a2a8cabc1\\test_solution.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\6fc3bd2a-9706-4d8d-893d-7ce33f5889dc\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\71e835ae-cd86-4c6c-af65-76b048f51139\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\816c956e-505e-49af-b25c-cd8a3634ceb5\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\88ed7faa-aec2-482c-9758-a1026d1785e4\\solution.zip",
+      "size": 1678,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\8ead54a0-09ee-4a77-83ed-7170b8bb256c\\solution.zip",
+      "size": 1678,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\9f4dc835-0129-4da8-aa85-ac8ecf282a21\\solution.zip",
+      "size": 1678,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\c5b6af61-718c-478d-80d1-5d8ef17e9d73\\solution.zip",
+      "size": 1678,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\db1caf4f-bfcc-4ab7-a8d2-9e187723934e\\test_ecg_algorithm.zip",
+      "size": 1491,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\ec42b7eb-ba10-45bb-8920-3ee275f954bb\\test_algorithm.zip",
+      "size": 417,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\mini-backend\\uploads\\f984b4dd-8f88-48ac-aef7-50942e537563\\solve.zip",
+      "size": 931,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\ecg_model.zip",
+      "size": 769,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\solution.zip",
+      "size": 1678,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\solution_optimized.zip",
+      "size": 6056,
+      "size_mb": 0.01
+    },
+    {
+      "path": ".\\solution\\solution_updated.zip",
+      "size": 3724,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\solve.zip",
+      "size": 931,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\TeamA-ECG-Algo.zip",
+      "size": 3307,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\solution\\SimpleECG.zip",
+      "size": 2950,
+      "size_mb": 0.0
+    },
+    {
+      "path": ".\\solution\\solution\\solution.zip",
+      "size": 2692,
+      "size_mb": 0.0
+    }
+  ],
+  "duplicate_files": {
+    "40d5773e6faae5b81048f47ec477a41f": [
+      ".\\competition.yaml",
+      ".\\ecg-compression\\codabench_bundle\\competition.yaml"
+    ],
+    "6844bb7d4c11b538902f09590495182b": [
+      ".\\main.py",
+      ".\\ecg-compression\\mini-backend\\main.py"
+    ],
+    "8474860f553724f65f48eb9aac4f832b": [
+      ".\\ModelingLab.png",
+      ".\\ECG-Compression-Benchmark\\ModelingLab.png"
+    ],
+    "7fd4859b1675ecddc532e24ba92026e9": [
+      ".\\README.md",
+      ".\\ecg-compression\\README.md"
+    ],
+    "3685b52983840e0df3ec639a2f926743": [
+      ".\\setup_complete_system.py",
+      ".\\ecg-compression\\setup_complete_system.py"
+    ],
+    "e6bb3227b56647f1af04831ba03e07a0": [
+      ".\\start_backend.py",
+      ".\\ecg-compression\\mini-backend\\start_backend.py"
+    ],
+    "2e053c4b875aedb912df2f5db41393d4": [
+      ".\\storage.py",
+      ".\\ecg-compression\\mini-backend\\storage.py"
+    ],
+    "a9e259b78e5747516de290ebeb297016": [
+      ".\\test_ecg_algorithm.zip",
+      ".\\test_solution.zip",
+      ".\\mini-backend\\uploads\\0788ba3c-8071-461a-89a4-5c2178a6ec77\\test_ecg_algorithm.zip",
+      ".\\mini-backend\\uploads\\1836d4da-d3f8-4180-88fc-88b9d58114dd\\test_ecg_algorithm.zip",
+      ".\\mini-backend\\uploads\\38dc84ff-5ed0-49de-9937-705fd9693317\\test_solution.zip",
+      ".\\mini-backend\\uploads\\479621bb-a453-44bd-8706-8a1a2a8cabc1\\test_solution.zip",
+      ".\\mini-backend\\uploads\\6fc3bd2a-9706-4d8d-893d-7ce33f5889dc\\test_ecg_algorithm.zip",
+      ".\\mini-backend\\uploads\\71e835ae-cd86-4c6c-af65-76b048f51139\\test_ecg_algorithm.zip",
+      ".\\mini-backend\\uploads\\db1caf4f-bfcc-4ab7-a8d2-9e187723934e\\test_ecg_algorithm.zip"
+    ],
+    "90511e270e2e81bed80bdca6dc85b11d": [
+      ".\\data\\submissions.csv",
+      ".\\ecg-compression\\mini-backend\\data\\submissions.csv"
+    ],
+    "45b59e4681ba219809acb65d26d26269": [
+      ".\\Development Phase\\input_data\\PhysioNet_MITBIH_rec117_5min.mat",
+      ".\\Development Phase\\reference_data\\PhysioNet_MITBIH_rec117_5min.mat",
+      ".\\ECG-Compression-Benchmark\\input_data\\PhysioNet_MITBIH_rec117_5min.mat",
+      ".\\final_phase\\input_data\\PhysioNet_MITBIH_rec117_5min.mat",
+      ".\\final_phase\\reference_data\\PhysioNet_MITBIH_rec117_5min.mat"
+    ],
+    "ce064edea8619275e49edeb3a1fd6ce5": [
+      ".\\Development Phase\\input_data\\PhysioNet_MITBIH_rec119_5min.mat",
+      ".\\Development Phase\\reference_data\\PhysioNet_MITBIH_rec119_5min.mat",
+      ".\\ECG-Compression-Benchmark\\input_data\\PhysioNet_MITBIH_rec119_5min.mat",
+      ".\\final_phase\\input_data\\PhysioNet_MITBIH_rec119_5min.mat",
+      ".\\final_phase\\reference_data\\PhysioNet_MITBIH_rec119_5min.mat"
+    ],
+    "5871aafaac13c2e4a9a713f4c401437c": [
+      ".\\ecg-compression\\codabench_bundle\\ingestion.py",
+      ".\\ingestion_program\\ingestion.py"
+    ],
+    "ee315efd4ff754711e5909b769b64b4d": [
+      ".\\ecg-compression\\codabench_bundle\\scoring.py",
+      ".\\scoring_program\\scoring.py"
+    ],
+    "b8fc8f2a2cb682ed2109148cab4405ad": [
+      ".\\ecg-compression\\mini-backend\\codabench_requirements.txt",
+      ".\\scoring_program\\requirements.txt"
+    ],
+    "1ffdb42ec9e18a81f1207b3bfe59c082": [
+      ".\\ECG-Compression-Benchmark\\pages\\data.html",
+      ".\\pages\\data.md"
+    ],
+    "6777149bf67f7522fdadbc370812d230": [
+      ".\\ECG-Compression-Benchmark\\pages\\evaluation.html",
+      ".\\pages\\evaluation.md"
+    ],
+    "01eac2d862f7c70ecd48a876a3e8d3f5": [
+      ".\\ECG-Compression-Benchmark\\pages\\overview.html",
+      ".\\pages\\overview.md"
+    ],
+    "af5a944a34e485a3e109d862753b46bd": [
+      ".\\ECG-Compression-Benchmark\\pages\\terms.html",
+      ".\\pages\\terms.md"
+    ],
+    "d751713988987e9331980363e24189ce": [
+      ".\\mini-backend\\data\\leaderboard.json",
+      ".\\mini-backend\\data\\submissions.json"
+    ],
+    "e3e036aae14e9c9e79d34c07c6c69acc": [
+      ".\\mini-backend\\uploads\\03f6f7ac-a5ca-4127-8011-beec7ef401ef\\test_ecg_algorithm.zip",
+      ".\\mini-backend\\uploads\\816c956e-505e-49af-b25c-cd8a3634ceb5\\test_ecg_algorithm.zip"
+    ],
+    "f733815dbc548e1c673f53294755aa0b": [
+      ".\\mini-backend\\uploads\\0f1c4b6d-1c73-4c24-ae56-a86c2bcaa981\\solution_updated.zip",
+      ".\\solution\\solution_updated.zip"
+    ],
+    "eafdac7ffdbf4dacf081e4759cb40ca1": [
+      ".\\mini-backend\\uploads\\20e54e6f-e2e4-4b25-a793-7fbe300e6114\\solution.zip",
+      ".\\solution\\solution\\solution.zip"
+    ],
+    "0d17d596d59780edc626ca1851b97519": [
+      ".\\mini-backend\\uploads\\23a76f06-8b85-437f-b7b4-db192e973a58\\solution_optimized.zip",
+      ".\\solution\\solution_optimized.zip"
+    ],
+    "6b25103ae4a0c5f34924ecaf090888ce": [
+      ".\\mini-backend\\uploads\\29e00aee-e1cd-4244-b53b-6bd7b632cb33\\TeamA-ECG-Algo.zip",
+      ".\\solution\\TeamA-ECG-Algo.zip"
+    ],
+    "9fc2d4d7f091b4283d69ad341f514d92": [
+      ".\\mini-backend\\uploads\\88ed7faa-aec2-482c-9758-a1026d1785e4\\solution.zip",
+      ".\\mini-backend\\uploads\\8ead54a0-09ee-4a77-83ed-7170b8bb256c\\solution.zip",
+      ".\\mini-backend\\uploads\\9f4dc835-0129-4da8-aa85-ac8ecf282a21\\solution.zip",
+      ".\\mini-backend\\uploads\\c5b6af61-718c-478d-80d1-5d8ef17e9d73\\solution.zip",
+      ".\\solution\\solution.zip"
+    ],
+    "ebb67ec6e110128d0ad4bad6d14d6f8e": [
+      ".\\mini-backend\\uploads\\f984b4dd-8f88-48ac-aef7-50942e537563\\solve.zip",
+      ".\\solution\\solve.zip"
+    ],
+    "19944fbe385679f4802bfe56d51adf13": [
+      ".\\solution\\README.md",
+      ".\\solution\\solution\\README.md"
+    ],
+    "d099ec77fe68ae672ce71e90179dc8e1": [
+      ".\\solution\\requirements.txt",
+      ".\\solution\\solution\\requirements.txt"
+    ],
+    "957474046632a20b0bc444826bb5fc69": [
+      ".\\solution\\__init__.py",
+      ".\\solution\\solution\\__init__.py"
+    ],
+    "ce90a5170e45bf0824acb2c7b3fe8785": [
+      ".\\solution\\solution\\ecg_model.py",
+      ".\\solution\\solution\\test_zip\\ecg_model.py"
+    ],
+    "9da630adc2c90d352ecfdd15f54dbf4c": [
+      ".\\solution\\solution\\solve.py",
+      ".\\solution\\solution\\test_zip\\solve.py"
+    ]
+  },
+  "large_files": [
+    {
+      "path": ".\\ecg_compression_bundle.zip",
+      "size": 6294213,
+      "size_mb": 6.0
+    },
+    {
+      "path": ".\\ModelingLab.png",
+      "size": 2056157,
+      "size_mb": 1.96
+    },
+    {
+      "path": ".\\demo_evaluation_data\\PhysioNet_MITBIH_rec201_10min.mat",
+      "size": 1728320,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\ECG-Compression-Benchmark\\ModelingLab.png",
+      "size": 2056157,
+      "size_mb": 1.96
+    },
+    {
+      "path": ".\\ECG-Compression-Benchmark\\VarPro_demos (1).pdf",
+      "size": 6228018,
+      "size_mb": 5.94
+    },
+    {
+      "path": ".\\evaluation_data\\PhysioNet_MITBIH_rec201_10min.mat",
+      "size": 1728320,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\mini-backend\\evaluation_data\\PhysioNet_MITBIH_rec201_10min.mat",
+      "size": 1728320,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\output_test\\PhysioNet_MITBIH_rec117_5min_pred.mat",
+      "size": 1728488,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\output_test\\PhysioNet_MITBIH_rec119_5min_pred.mat",
+      "size": 1728488,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\output_test\\PhysioNet_MITBIH_rec201_10min_pred.mat",
+      "size": 3456488,
+      "size_mb": 3.3
+    },
+    {
+      "path": ".\\simple_test_data\\PhysioNet_MITBIH_rec201_10min.mat",
+      "size": 1728320,
+      "size_mb": 1.65
+    },
+    {
+      "path": ".\\test_data\\PhysioNet_MITBIH_rec201_10min.mat",
+      "size": 1728320,
+      "size_mb": 1.65
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+* [32mfeature/ecg-compression-system[m b55fdf3 feat: Implement complete ECG compression challenge platform with backend API, frontend interface, user authentication, file upload, scoring system, and leaderboard functionality
+  main                          [m 8d8709e 初始化项目，上传 ECG Compression 代码
