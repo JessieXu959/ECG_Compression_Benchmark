@@ -15,6 +15,8 @@ import base64
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Any
+import tempfile
+import csv
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,27 +68,85 @@ class SubmissionResponse(BaseModel):
 users_db = {}
 submissions_db = {}
 
+def load_data_from_csv():
+    """Load existing data from CSV files"""
+    # Load users from CSV
+    users_csv_path = "../../data/users.csv"
+    if os.path.exists(users_csv_path):
+        try:
+            with open(users_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    team_name = row.get('teamName', '').strip()
+                    if team_name:
+                        users_db[team_name] = {
+                            "email": row.get('email', ''),
+                            "password": row.get('password', ''),
+                            "created_at": row.get('registrationDate', ''),
+                            "totalSubmissions": int(row.get('totalSubmissions', 0)),
+                            "bestScore": float(row.get('bestScore', 0))
+                        }
+            print(f"✅ Loaded {len(users_db)} users from CSV")
+        except Exception as e:
+            print(f"⚠️ Error loading users from CSV: {e}")
+
+    # Load submissions from CSV
+    submissions_csv_path = "../../data/submissions.csv"
+    if os.path.exists(submissions_csv_path):
+        try:
+            with open(submissions_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    submission_id = row.get('id', '').strip()
+                    if submission_id:
+                        # Parse metrics JSON
+                        metrics = {}
+                        metrics_str = row.get('metrics', '{}')
+                        try:
+                            metrics = json.loads(metrics_str.replace("'", '"'))
+                        except:
+                            pass
+
+                        submissions_db[submission_id] = {
+                            "teamName": row.get('teamName', ''),
+                            "algorithmName": row.get('algorithmName', ''),
+                            "fileName": row.get('fileName', ''),
+                            "submitted_at": row.get('timestamp', ''),
+                            "status": row.get('status', ''),
+                            "score": float(row.get('score', 0)) if row.get('score') else 0,
+                            "metrics": metrics,
+                            "filePath": row.get('filePath', ''),
+                            "paperTitle": row.get('paperTitle', ''),
+                            "paperAuthors": row.get('paperAuthors', ''),
+                            "paperType": row.get('paperType', ''),
+                            "paperDOI": row.get('paperDOI', ''),
+                            "evaluationTime": float(row.get('evaluationTime', 0)) if row.get('evaluationTime') else 0
+                        }
+            print(f"✅ Loaded {len(submissions_db)} submissions from CSV")
+        except Exception as e:
+            print(f"⚠️ Error loading submissions from CSV: {e}")
+
+# Load existing data on startup
+load_data_from_csv()
+
 # Import real evaluation system
 try:
     import sys
     sys.path.append('..')
-    from real_evaluation_system import RealECGEvaluationSystem
-    REAL_EVALUATION_AVAILABLE = True
-    print("✅ Real ECG evaluation system loaded")
-except ImportError as e:
-    print(f"⚠️ Real evaluation system not available: {e}")
-    print("🔄 Falling back to simulated evaluation")
-    REAL_EVALUATION_AVAILABLE = False
+    from core.evaluation.real_evaluation_system import RealECGEvaluationSystem
+    from core.evaluation.enhanced_scoring_system import ComprehensiveECGEvaluator
+    print("✅ Real evaluation system loaded successfully")
+    REAL_EVALUATION = True
 
-# Initialize real evaluation system if available
-if REAL_EVALUATION_AVAILABLE:
-    try:
-        real_evaluator = RealECGEvaluationSystem("evaluation_data")
-        print(f"🎯 Real evaluator initialized with {len(real_evaluator.datasets)} datasets")
-    except Exception as e:
-        print(f"❌ Failed to initialize real evaluator: {e}")
-        print("🔄 Falling back to simulated evaluation")
-        REAL_EVALUATION_AVAILABLE = False
+    # Initialize enhanced scoring system
+    enhanced_evaluator = ComprehensiveECGEvaluator()
+    print("✅ Enhanced scoring system initialized")
+
+except ImportError as e:
+    print(f"⚠️  Failed to load real evaluation system: {e}")
+    print("📊 Using simulated evaluation")
+    REAL_EVALUATION = False
+    enhanced_evaluator = None
 
 # Data cleanup function
 def clear_demo_data():
@@ -361,71 +421,104 @@ async def process_submission(submission_id: str):
 async def run_local_evaluation(file_path: str) -> Dict[str, Any]:
     """Run ECG compression evaluation - Real or Simulated"""
 
-    if REAL_EVALUATION_AVAILABLE:
+    if REAL_EVALUATION:
         return await run_real_evaluation(file_path)
     else:
         return await run_simulated_evaluation(file_path)
 
-async def run_real_evaluation(file_path: str) -> Dict:
-    """Run real ECG evaluation using the integrated scoring system"""
-
+async def run_real_evaluation(file_path: str) -> Dict[str, Any]:
+    """
+    Run real ECG compression evaluation using enhanced scoring system
+    """
     try:
-        # Use the real evaluation system
-        result = real_evaluator.evaluate_submission(file_path)
+        print(f"🔬 Starting enhanced evaluation for: {file_path}")
 
-        if result["status"] == "completed":
-            metrics = result["metrics"]
+        # Initialize real evaluation system
+        real_evaluator = RealECGEvaluationSystem("evaluation_data")
+        print(f"📊 Loaded {len(real_evaluator.datasets)} evaluation datasets")
 
-            # Format response using user's original scoring system
+        # Extract and run user algorithm
+        temp_dir = tempfile.mkdtemp(prefix="ecg_eval_")
+        extract_dir = os.path.join(temp_dir, "extracted")
+
+        try:
+            # Extract submission
+            shutil.unpack_archive(file_path, extract_dir)
+            print(f"📦 Extracted submission to: {extract_dir}")
+
+            # Run evaluation
+            results = real_evaluator.evaluate_submission(extract_dir)
+            print(f"✅ Base evaluation completed")
+
+            # Apply enhanced scoring system
+            if enhanced_evaluator and 'dataset_results' in results:
+                print("🚀 Running enhanced metrics calculation...")
+
+                # Get original signals for enhanced evaluation
+                original_signals = {}
+                for dataset_name, dataset_info in real_evaluator.datasets.items():
+                    original_signals[dataset_name] = dataset_info['signal']
+
+                # Run comprehensive evaluation
+                enhanced_results = enhanced_evaluator.evaluate_dataset_submission(
+                    results['dataset_results'],
+                    original_signals
+                )
+
+                # Merge enhanced metrics with base results
+                results.update({
+                    'enhanced_metrics': enhanced_results['overall_metrics'],
+                    'dataset_evaluations': enhanced_results['dataset_evaluations'],
+                    'evaluation_summary': enhanced_results['evaluation_summary'],
+                    'clinical_assessment': {
+                        'total_datasets': enhanced_results['total_datasets'],
+                        'datasets_processed': enhanced_results['datasets_processed'],
+                        'clinical_acceptability': enhanced_results['evaluation_summary']['clinical_acceptability']
+                    }
+                })
+
+                # Update primary score to use enhanced overall score
+                if 'enhanced_metrics' in results and 'OverallScore' in results['enhanced_metrics']:
+                    results['final_score'] = results['enhanced_metrics']['OverallScore']
+                    print(f"📈 Enhanced Overall Score: {results['final_score']:.4f}")
+
+                # Log comprehensive metrics
+                if 'enhanced_metrics' in results:
+                    metrics = results['enhanced_metrics']
+                    print(f"📊 Enhanced Metrics Summary:")
+                    print(f"   CR: {metrics.get('CR', 0):.2f}")
+                    print(f"   PRD: {metrics.get('PRD', 0):.4f}%")
+                    print(f"   PRDN: {metrics.get('PRDN', 0):.4f}%")
+                    print(f"   WWPRD: {metrics.get('WWPRD', 0):.4f}%")
+                    print(f"   SNR: {metrics.get('SNR', 0):.2f} dB")
+                    print(f"   QS: {metrics.get('QS', 0):.4f}")
+                    print(f"   Overall Score: {metrics.get('OverallScore', 0):.4f}")
+
+            return results
+
+        except Exception as e:
+            print(f"❌ Evaluation failed: {str(e)}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
             return {
-                "success": True,
-                "algorithm_executed": True,
-                "evaluation_method": "real_ecg_compression",
-
-                # Core metrics (user's original format)
-                "compression_ratio": metrics["CR"],
-                "prd_percent": metrics["PRD"],
-                "rmse": metrics["RMSE"],
-                "snr_db": metrics["SNR"],
-                "quality_score": metrics["QS"],
-                "final_score": metrics["FinalScore"],  # User's CR/(PRD+epsilon) formula
-                "score": metrics["Score"],  # Primary ranking metric
-
-                # Performance info
-                "execution_time": result["performance"]["execution_time"],
-                "datasets_processed": result["performance"]["datasets_processed"],
-                "total_datasets": result["performance"]["total_datasets"],
-
-                # Scoring system info
-                "scoring_formula": result["scoring_info"]["formula"],
-                "epsilon_value": result["scoring_info"]["epsilon"],
-
-                # Detailed results
-                "detailed_metrics": result.get("detailed_metrics", {}),
-                "datasets_evaluated": result["datasets_evaluated"],
-
-                # Status info
-                "status": "evaluation_completed",
-                "timestamp": result["timestamp"],
-                "errors": result.get("errors", [])
+                "status": "error",
+                "message": f"Evaluation failed: {str(e)}",
+                "final_score": 0.0,
+                "metrics": {"CR": 0, "PRD": float('inf'), "RMSE": float('inf')}
             }
-        else:
-            return {
-                "success": False,
-                "algorithm_executed": False,
-                "evaluation_method": "real_ecg_compression",
-                "error": "Evaluation failed",
-                "details": result.get("errors", []),
-                "score": 0.0
-            }
+        finally:
+            # Cleanup
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+                print(f"🧹 Cleaned up temporary directory: {temp_dir}")
 
     except Exception as e:
+        print(f"❌ Critical evaluation error: {str(e)}")
         return {
-            "success": False,
-            "algorithm_executed": False,
-            "evaluation_method": "real_ecg_compression",
-            "error": f"Real evaluation system error: {str(e)}",
-            "score": 0.0
+            "status": "error",
+            "message": f"Critical evaluation error: {str(e)}",
+            "final_score": 0.0,
+            "metrics": {"CR": 0, "PRD": float('inf'), "RMSE": float('inf')}
         }
 
 async def run_simulated_evaluation(file_path: str) -> Dict[str, Any]:
@@ -503,6 +596,91 @@ async def get_leaderboard():
     except Exception as e:
         print(f"❌ Leaderboard error: {str(e)}")
         return {"results": []}
+
+@app.get("/api/global-stats")
+async def get_global_statistics():
+    """Get global competition statistics"""
+    try:
+        # Get all completed submissions
+        completed_submissions = [
+            sub for sub in submissions_db.values()
+            if sub.get("status") == "completed" and sub.get("score", 0) > 0
+        ]
+
+        # Get all submissions (including pending/failed)
+        all_submissions = list(submissions_db.values())
+
+        # Calculate statistics
+        total_users = len(users_db)
+        total_submissions = len(all_submissions)
+        completed_count = len(completed_submissions)
+
+        # Score statistics from completed submissions
+        scores = [float(sub.get("score", 0)) for sub in completed_submissions]
+        cr_values = [float(sub.get("metrics", {}).get("CR", 0)) for sub in completed_submissions]
+        prd_values = [float(sub.get("metrics", {}).get("PRD", 0)) for sub in completed_submissions if sub.get("metrics", {}).get("PRD", 0) > 0]
+
+        # Calculate averages and bests
+        avg_score = sum(scores) / len(scores) if scores else 0
+        best_score = max(scores) if scores else 0
+        worst_score = min(scores) if scores else 0
+
+        avg_cr = sum(cr_values) / len(cr_values) if cr_values else 0
+        best_cr = max(cr_values) if cr_values else 0
+
+        avg_prd = sum(prd_values) / len(prd_values) if prd_values else 0
+        best_prd = min(prd_values) if prd_values else 0
+
+        # Get unique teams with completed submissions
+        active_teams = len(set(sub.get("teamName") for sub in completed_submissions))
+
+        return {
+            "global_metrics": {
+                "total_users": total_users,
+                "active_teams": active_teams,
+                "total_submissions": total_submissions,
+                "completed_submissions": completed_count,
+                "success_rate": (completed_count / total_submissions * 100) if total_submissions > 0 else 0
+            },
+            "score_statistics": {
+                "average_score": round(avg_score, 2),
+                "best_score": round(best_score, 2),
+                "worst_score": round(worst_score, 2),
+                "total_scores_recorded": len(scores)
+            },
+            "performance_metrics": {
+                "average_compression_ratio": round(avg_cr, 2),
+                "best_compression_ratio": round(best_cr, 2),
+                "average_prd": round(avg_prd, 4),
+                "best_prd": round(best_prd, 4)
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        print(f"❌ Global stats error: {str(e)}")
+        return {
+            "global_metrics": {
+                "total_users": 0,
+                "active_teams": 0,
+                "total_submissions": 0,
+                "completed_submissions": 0,
+                "success_rate": 0
+            },
+            "score_statistics": {
+                "average_score": 0,
+                "best_score": 0,
+                "worst_score": 0,
+                "total_scores_recorded": 0
+            },
+            "performance_metrics": {
+                "average_compression_ratio": 0,
+                "best_compression_ratio": 0,
+                "average_prd": 0,
+                "best_prd": 0
+            },
+            "generated_at": datetime.now().isoformat()
+        }
 
 @app.get("/api/submission-status/{submission_id}")
 async def get_submission_status(submission_id: str):

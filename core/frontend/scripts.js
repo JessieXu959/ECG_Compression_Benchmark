@@ -346,6 +346,8 @@ async function updateLeaderboard() {
             }
         });
 
+        console.log('📊 Leaderboard response status:', response.status);
+
         if (!response.ok) {
             console.error('Leaderboard fetch failed:', response.status, response.statusText);
             if (response.status === 401 || response.status === 403) {
@@ -355,6 +357,7 @@ async function updateLeaderboard() {
                 showEmptyLeaderboard();
                 return;
             }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -364,20 +367,30 @@ async function updateLeaderboard() {
         const leaderboardTable = document.querySelector('.leaderboard-table tbody');
         if (leaderboardTable) {
             if (!data.results || data.results.length === 0) {
+                console.log('📊 No leaderboard results, showing empty state');
                 showEmptyLeaderboard();
             } else {
-                const leaderboardBody = data.results.map((entry, index) => `
-                    <tr ${entry.participant_name === (currentTeam || '') ? 'class="current-team"' : ''}>
-                        <td>${index + 1}</td>
-                        <td>${entry.participant_name || 'Unknown'}</td>
-                        <td>${safeToFixed(entry.scores?.CR, 1)}</td>
-                        <td>${safeToFixed(entry.scores?.PRD, 4)}</td>
-                        <td>${safeToFixed(entry.scores?.Score, 1)}</td>
-                    </tr>
-                `).join('');
+                console.log(`📊 Rendering ${data.results.length} leaderboard entries`);
+                const leaderboardBody = data.results.map((entry, index) => {
+                    const isCurrentTeam = entry.participant_name === (currentTeam || '');
+                    console.log(`📊 Processing entry ${index + 1}: ${entry.participant_name}, Score: ${entry.score}, Current team: ${isCurrentTeam}`);
+
+                    return `
+                        <tr ${isCurrentTeam ? 'class="current-team"' : ''}>
+                            <td>${index + 1}</td>
+                            <td>${entry.participant_name || 'Unknown'}</td>
+                            <td>${safeToFixed(entry.scores?.CR, 1)}</td>
+                            <td>${safeToFixed(entry.scores?.PRD, 4)}</td>
+                            <td>${safeToFixed(entry.scores?.Score || entry.score, 1)}</td>
+                        </tr>
+                    `;
+                }).join('');
 
                 leaderboardTable.innerHTML = leaderboardBody;
+                console.log('✅ Leaderboard table updated successfully');
             }
+        } else {
+            console.warn('⚠️ Leaderboard table element not found');
         }
     } catch (error) {
         console.error('❌ Leaderboard fetch error:', error);
@@ -1136,10 +1149,31 @@ function formatStatus(status) {
 }
 
 function formatDate(dateString) {
-    if (!dateString) return 'Unknown';
+    if (!dateString || dateString === 'Invalid Date') return 'Unknown';
     try {
-        return new Date(dateString).toLocaleDateString();
+        const date = new Date(dateString);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return 'Unknown';
+        }
+        return date.toLocaleDateString();
     } catch (error) {
+        console.warn('Date formatting error:', error, 'for date:', dateString);
+        return 'Unknown';
+    }
+}
+
+function formatDateTime(dateString) {
+    if (!dateString || dateString === 'Invalid Date') return 'Unknown';
+    try {
+        const date = new Date(dateString);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return 'Unknown';
+        }
+        return date.toLocaleString();
+    } catch (error) {
+        console.warn('DateTime formatting error:', error, 'for date:', dateString);
         return 'Unknown';
     }
 }
@@ -1164,11 +1198,19 @@ async function updatePersonalPerformanceTable() {
     }
 
         // Sort by submission date (newest first)
-        userSubmissions.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+        userSubmissions.sort((a, b) => {
+            const dateA = new Date(a.submitted_at || a.timestamp || 0);
+            const dateB = new Date(b.submitted_at || b.timestamp || 0);
+            return dateB - dateA;
+        });
 
         tbody.innerHTML = userSubmissions.map(sub => {
             const fileName = sub.fileName || (sub.algorithmName ? sub.algorithmName + '.zip' : 'algorithm.zip');
-            const submissionDate = new Date(sub.submitted_at).toLocaleString();
+
+            // Fix date handling - try multiple date fields
+            const submissionDateStr = sub.submitted_at || sub.timestamp || new Date().toISOString();
+            const submissionDate = formatDateTime(submissionDateStr);
+
             const status = sub.status || 'unknown';
 
             // Handle different status types
@@ -1544,6 +1586,9 @@ function initializePage() {
     updateTeamDisplay();
     updateProfileDisplay();
 
+    // Update global statistics (regardless of login status)
+    updateGlobalStatistics();
+
     // Load real data if user is logged in
     if (getAuthToken() && currentTeam) {
         console.log('✅ User logged in - loading real data');
@@ -1820,15 +1865,7 @@ async function changePassword(currentPassword, newPassword, confirmPassword) {
             return;
         }
 
-        // Since we don't have a backend to verify the current password,
-        // we'll just validate that it's not empty and update locally
-        if (!currentPassword || currentPassword.length < 1) {
-            alert('Please enter your current password');
-            return;
-        }
-
-        // In a real application, you would verify the current password with the backend
-        // For now, we'll just store a hash indicator in localStorage
+        // Since we don't have a backend, we'll just store a hash indicator in localStorage
         const passwordHash = btoa(newPassword); // Simple base64 encoding (not secure, just for demo)
         localStorage.setItem('userPasswordHash', passwordHash);
 
@@ -2092,5 +2129,101 @@ function safeToFixed(value, decimals = 1) {
     if (value === null || value === undefined || value === '') return 'N/A';
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return isNaN(num) ? 'N/A' : num.toFixed(decimals);
+}
+
+// Global statistics management
+async function updateGlobalStatistics() {
+    try {
+        console.log('📊 Fetching global statistics...');
+        const response = await fetch(`${API_BASE_URL}/global-stats`);
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Global statistics received:', data);
+
+            // Update global metrics
+            const elements = {
+                'globalAverageScore': data.score_statistics?.average_score || 0,
+                'activeTeams': data.global_metrics?.active_teams || 0,
+                'topCompressionRatio': data.performance_metrics?.best_compression_ratio || 0,
+                'bestPRD': data.performance_metrics?.best_prd || 0
+            };
+
+            // Update DOM elements
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (id === 'globalAverageScore') {
+                        element.textContent = value > 0 ? safeToFixed(value, 1) : 'N/A';
+                    } else if (id === 'topCompressionRatio') {
+                        element.textContent = value > 0 ? `${safeToFixed(value, 1)}:1` : 'N/A';
+                    } else if (id === 'bestPRD') {
+                        element.textContent = value > 0 ? `${safeToFixed(value, 4)}%` : 'N/A';
+                    } else {
+                        element.textContent = value.toString();
+                    }
+                }
+            });
+
+            // Update team names if we have leaderboard data
+            await updateTopPerformers();
+
+            console.log('✅ Global statistics updated successfully');
+        } else {
+            console.warn('⚠️ Failed to fetch global statistics:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ Error fetching global statistics:', error);
+        // Set fallback values
+        const fallbackElements = {
+            'globalAverageScore': 'N/A',
+            'activeTeams': '0',
+            'topCompressionRatio': 'N/A',
+            'bestPRD': 'N/A'
+        };
+
+        Object.entries(fallbackElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+    }
+}
+
+// Update top performers from leaderboard
+async function updateTopPerformers() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/leaderboard`);
+        if (response.ok) {
+            const data = await response.json();
+            const results = data.results || [];
+
+            if (results.length > 0) {
+                // Find best CR team
+                const bestCRTeam = results.reduce((best, current) =>
+                    (current.scores?.CR || 0) > (best.scores?.CR || 0) ? current : best
+                );
+
+                // Find best PRD team
+                const bestPRDTeam = results.reduce((best, current) =>
+                    (current.scores?.PRD || Infinity) < (best.scores?.PRD || Infinity) ? current : best
+                );
+
+                // Update team names
+                const topCompressionTeamElement = document.getElementById('topCompressionTeam');
+                if (topCompressionTeamElement && bestCRTeam.participant_name) {
+                    topCompressionTeamElement.textContent = `Team ${bestCRTeam.participant_name}`;
+                }
+
+                const bestPRDTeamElement = document.getElementById('bestPRDTeam');
+                if (bestPRDTeamElement && bestPRDTeam.participant_name) {
+                    bestPRDTeamElement.textContent = `Team ${bestPRDTeam.participant_name}`;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error updating top performers:', error);
+    }
 }
 

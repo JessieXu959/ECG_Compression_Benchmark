@@ -350,7 +350,7 @@ async def evaluate_submission_background(zip_path: str, submission_id: str):
 async def get_leaderboard_endpoint():
     """Get current leaderboard"""
     leaderboard = get_leaderboard(limit=50)
-    return {"leaderboard": leaderboard}
+    return {"results": leaderboard}
 
 @app.get("/api/submission-status/{submission_id}")
 async def get_submission_status(submission_id: str):
