@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional
 import multiprocessing
 import warnings
+import importlib.util
 
 # Platform-specific imports
 try:
@@ -197,17 +198,32 @@ class SafeCodeExecutor:
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(temp_dir)
 
-            # Look for required files
-            required_files = ["ecg_model.py"]  # Main algorithm file
+            # Look for common algorithm files (more flexible)
+            possible_files = ["ecg_model.py", "main.py", "algorithm.py", "compress.py", "compression.py"]
             found_files = []
 
             for root, dirs, files in os.walk(temp_dir):
                 for file in files:
-                    if file in required_files:
+                    if file in possible_files:
                         found_files.append(os.path.join(root, file))
 
             if not found_files:
-                raise ValueError(f"Required files not found: {required_files}")
+                # Even more flexible - accept any .py file
+                python_files = []
+                for root, dirs, files in os.walk(temp_dir):
+                    for file in files:
+                        if file.endswith('.py'):
+                            python_files.append(os.path.join(root, file))
+                
+                if python_files:
+                    print(f"Warning: No standard algorithm files found, using: {python_files[0]}")
+                    # Copy the first Python file to expected name
+                    import shutil
+                    target_path = os.path.join(temp_dir, "ecg_model.py")
+                    shutil.copy2(python_files[0], target_path)
+                    found_files = [target_path]
+                else:
+                    raise ValueError(f"No Python files found. Please include one of: {possible_files}")
 
             return temp_dir
 
@@ -255,25 +271,86 @@ import os
 import numpy as np
 import json
 import traceback
+import importlib.util
 
 # Add algorithm directory to path
 sys.path.insert(0, r"{algorithm_dir}")
 
 try:
-    from ecg_model import ECGCompressor
-
     # Load input data from JSON string
-    input_data = {json.dumps(input_data)}
+    input_data_raw = {json.dumps(input_data)}
 
     results = {{}}
 
-    for dataset_name, dataset_info in input_data.items():
+    # Try to import and use the algorithm in multiple ways
+    algorithm_module = None
+    algorithm_function = None
+    
+    # Method 1: Try to import ecg_model with ECGCompressor class
+    try:
+        from ecg_model import ECGCompressor
+        compressor = ECGCompressor()
+        algorithm_function = compressor.compress_and_reconstruct
+        print("Using ECGCompressor class")
+    except:
+        pass
+    
+    # Method 2: Try to find any suitable function in ecg_model
+    if algorithm_function is None:
         try:
-            ecg_signal = dataset_info["signal"]
+            import ecg_model
+            # Look for common function names
+            for func_name in ['compress_and_reconstruct', 'compress', 'process', 'main', 'run']:
+                if hasattr(ecg_model, func_name):
+                    algorithm_function = getattr(ecg_model, func_name)
+                    print(f"Using function: {{func_name}}")
+                    break
+        except:
+            pass
+    
+    # Method 3: Try to import main.py
+    if algorithm_function is None:
+        try:
+            import main
+            for func_name in ['compress_and_reconstruct', 'compress', 'process', 'main', 'run']:
+                if hasattr(main, func_name):
+                    algorithm_function = getattr(main, func_name)
+                    print(f"Using main.{{func_name}}")
+                    break
+        except:
+            pass
 
-            # Initialize and run algorithm
-            compressor = ECGCompressor()
-            f_recon, cr_val = compressor.compress_and_reconstruct(ecg_signal)
+    if algorithm_function is None:
+        raise ImportError("No suitable algorithm function found")
+
+    for dataset_name, dataset_info in input_data_raw.items():
+        try:
+            # Convert list back to NumPy array (FIXED: this was the main issue!)
+            ecg_signal = np.array(dataset_info["signal"])
+            
+            # Try different calling conventions
+            try:
+                # Method 1: Standard format (signal) -> (reconstructed, cr)
+                result = algorithm_function(ecg_signal)
+                if isinstance(result, tuple) and len(result) == 2:
+                    f_recon, cr_val = result
+                else:
+                    f_recon = result
+                    cr_val = 2.0  # Default compression ratio
+            except TypeError:
+                try:
+                    # Method 2: With sampling frequency
+                    fs = dataset_info.get("fs", 360)
+                    result = algorithm_function(ecg_signal, fs)
+                    if isinstance(result, tuple) and len(result) == 2:
+                        f_recon, cr_val = result
+                    else:
+                        f_recon = result
+                        cr_val = 2.0
+                except:
+                    # Method 3: Just pass the signal and get reconstruction
+                    f_recon = algorithm_function(ecg_signal)
+                    cr_val = 2.0
 
             # Ensure reconstructed signal is proper format
             if hasattr(f_recon, 'tolist'):
@@ -287,7 +364,6 @@ try:
                     f_recon = f_recon[:len(ecg_signal)]
                 else:
                     # Pad with zeros or interpolate
-                    import numpy as np
                     f_recon_array = np.array(f_recon)
                     original_indices = np.linspace(0, len(f_recon)-1, len(f_recon))
                     target_indices = np.linspace(0, len(f_recon)-1, len(ecg_signal))
@@ -343,16 +419,32 @@ except Exception as e:
                 if process.returncode == 0:
                     # Parse output
                     try:
-                        result = json.loads(stdout)
+                        # Try to find the JSON part in the output
+                        lines = stdout.strip().split('\n')
+                        json_line = None
+                        
+                        # Look for the JSON line (usually the last line)
+                        for line in reversed(lines):
+                            line = line.strip()
+                            if line.startswith('{') and line.endswith('}'):
+                                json_line = line
+                                break
+                        
+                        if json_line:
+                            result = json.loads(json_line)
+                        else:
+                            # Try to parse the entire output as JSON
+                            result = json.loads(stdout)
+                            
                         return {
                             'success': True,
                             'output': result,
                             'execution_time': execution_time
                         }
-                    except json.JSONDecodeError:
+                    except json.JSONDecodeError as json_error:
                         return {
                             'success': False,
-                            'error': f'Invalid JSON output: {stdout[:500]}',
+                            'error': f'Invalid JSON output: {json_error}. Output preview: {stdout[:1000]}',
                             'execution_time': execution_time
                         }
                 else:

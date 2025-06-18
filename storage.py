@@ -55,8 +55,8 @@ class StorageManager:
             with open(SUBMISSIONS_FILE, 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=[
                     'id', 'teamName', 'algorithmName', 'fileName', 'timestamp',
-                    'status', 'score', 'metrics', 'filePath', 'paperTitle',
-                    'paperAuthors', 'paperType', 'paperDOI', 'evaluationTime'
+                    'status', 'score', 'metrics', 'filePath', 'fileHash',
+                    'paperTitle', 'paperAuthors', 'paperType', 'paperDOI', 'evaluationTime'
                 ])
                 writer.writeheader()
 
@@ -118,8 +118,8 @@ def save_submission(submission_id: str, submission_data: Dict[str, Any]):
         with open(SUBMISSIONS_FILE, 'a', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=[
                 'id', 'teamName', 'algorithmName', 'fileName', 'timestamp',
-                'status', 'score', 'metrics', 'filePath', 'paperTitle',
-                'paperAuthors', 'paperType', 'paperDOI', 'evaluationTime'
+                'status', 'score', 'metrics', 'filePath', 'fileHash',
+                'paperTitle', 'paperAuthors', 'paperType', 'paperDOI', 'evaluationTime'
             ])
             writer.writerow(submission_data_copy)
 

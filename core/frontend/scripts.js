@@ -370,9 +370,9 @@ async function updateLeaderboard() {
                     <tr ${entry.participant_name === (currentTeam || '') ? 'class="current-team"' : ''}>
                         <td>${index + 1}</td>
                         <td>${entry.participant_name || 'Unknown'}</td>
-                        <td>${entry.scores?.CR?.toFixed(1) || 'N/A'}</td>
-                        <td>${entry.scores?.PRD?.toFixed(4) || 'N/A'}</td>
-                        <td>${entry.scores?.Score?.toFixed(1) || 'N/A'}</td>
+                        <td>${safeToFixed(entry.scores?.CR, 1)}</td>
+                        <td>${safeToFixed(entry.scores?.PRD, 4)}</td>
+                        <td>${safeToFixed(entry.scores?.Score, 1)}</td>
                     </tr>
                 `).join('');
 
@@ -657,9 +657,9 @@ async function pollSubmissionStatus(submissionId, maxAttempts = 30) {
 
                     // Show completion notification
                     if (result.status === 'completed') {
-                        const score = result.score?.toFixed(1) || 'N/A';
-                        const cr = result.metrics?.CR?.toFixed(1) || 'N/A';
-                        const prd = result.metrics?.PRD?.toFixed(4) || 'N/A';
+                        const score = safeToFixed(result.score, 1);
+                        const cr = safeToFixed(result.metrics?.CR, 1);
+                        const prd = safeToFixed(result.metrics?.PRD, 4);
 
                         alert(`🎉 Submission completed!\n\nScore: ${score}\nCR: ${cr}\nPRD: ${prd}\n\nCheck the leaderboard to see your ranking!`);
                     } else {
@@ -887,8 +887,8 @@ async function updatePersonalStats() {
         // Update elements if they exist
         const elements = {
             'totalSubmissions': totalSubs.toString(),
-            'bestScore': bestScore.toFixed(1),
-            'averageScore': avgScore.toFixed(1),
+            'bestScore': safeToFixed(bestScore, 1),
+            'averageScore': safeToFixed(avgScore, 1),
             'currentRank': currentRank || '-'
         };
 
@@ -1017,9 +1017,9 @@ async function updateLeaderboardPreview() {
                         <tr>
                             <td>${index + 1}</td>
                             <td>${result.participant_name}</td>
-                            <td>${result.scores?.CR?.toFixed(1) || 'N/A'}</td>
-                            <td>${result.scores?.PRD?.toFixed(4) || 'N/A'}</td>
-                            <td>${result.scores?.Score?.toFixed(1) || 'N/A'}</td>
+                            <td>${safeToFixed(result.scores?.CR, 1)}</td>
+                            <td>${safeToFixed(result.scores?.PRD, 4)}</td>
+                            <td>${safeToFixed(result.scores?.Score, 1)}</td>
                         </tr>
                     `).join('');
                 }
@@ -1089,8 +1089,8 @@ async function updatePersonalSubmissionHistory() {
                     </div>
                     <div class="submission-details">
                         <p><strong>Submitted:</strong> ${new Date(submission.submitted_at).toLocaleString()}</p>
-                            <p><strong>Score:</strong> ${submission.score?.toFixed(1) || 'Not available'}</p>
-                            ${submission.metrics ? `<p><strong>Metrics:</strong> CR: ${submission.metrics.CR?.toFixed(1) || 'N/A'}, PRD: ${submission.metrics.PRD?.toFixed(4) || 'N/A'}</p>` : ''}
+                            <p><strong>Score:</strong> ${safeToFixed(submission.score, 1)}</p>
+                            ${submission.metrics ? `<p><strong>Metrics:</strong> CR: ${safeToFixed(submission.metrics.CR, 1)}, PRD: ${safeToFixed(submission.metrics.PRD, 4)}</p>` : ''}
                     </div>
                 </div>
             `;
@@ -1193,9 +1193,9 @@ async function updatePersonalPerformanceTable() {
                     <td>${fileName}</td>
                     <td>${submissionDate}</td>
                     <td>${statusDisplay}</td>
-                    <td>${sub.metrics?.CR?.toFixed(1) || 'N/A'}</td>
-                    <td>${sub.metrics?.PRD?.toFixed(4) || 'N/A'}</td>
-                    <td>${sub.score?.toFixed(1) || 'N/A'}</td>
+                    <td>${safeToFixed(sub.metrics?.CR, 1)}</td>
+                    <td>${safeToFixed(sub.metrics?.PRD, 4)}</td>
+                    <td>${safeToFixed(sub.score, 1)}</td>
         </tr>
             `;
         }).join('');
@@ -1312,60 +1312,11 @@ async function checkSubmissionCompletion(submissionId) {
 
                         // 显示提交结果通知
                         if (result.status === 'completed') {
-                            const score = result.score?.toFixed(1) || 'N/A';
-                            const metrics = result.metrics || {};
+                            const score = safeToFixed(result.score, 1);
+                            const cr = safeToFixed(result.metrics?.CR, 1);
+                            const prd = safeToFixed(result.metrics?.PRD, 4);
 
-                            // 创建一个美观的通知
-                            const notification = document.createElement('div');
-                            notification.className = 'submission-notification';
-                            notification.innerHTML = `
-                                <div class="notification-content">
-                                    <div class="notification-header">
-                                        <h3>✅ Submission Completed!</h3>
-                                        <span class="close-notification">×</span>
-                                    </div>
-                                    <div class="notification-body">
-                                        <p><strong>Score:</strong> ${score}</p>
-                                        <p><strong>CR:</strong> ${metrics.CR?.toFixed(1) || 'N/A'}</p>
-                                        <p><strong>PRD:</strong> ${metrics.PRD?.toFixed(4) || 'N/A'}</p>
-                                    </div>
-                                    <div class="notification-footer">
-                                        <button class="view-leaderboard">View Leaderboard</button>
-                                    </div>
-                                </div>
-                            `;
-
-                            // 添加样式
-                            notification.style.cssText = `
-                                position: fixed;
-                                bottom: 20px;
-                                right: 20px;
-                                background: white;
-                                border-radius: 8px;
-                                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                                z-index: 1000;
-                                overflow: hidden;
-                                max-width: 300px;
-                                animation: slideIn 0.3s ease-out;
-                            `;
-
-                            document.body.appendChild(notification);
-
-                            // 点击关闭
-                            notification.querySelector('.close-notification').addEventListener('click', () => {
-                                notification.remove();
-                            });
-
-                            // 点击查看排行榜
-                            notification.querySelector('.view-leaderboard').addEventListener('click', () => {
-                                showSection('leaderboard');
-                                notification.remove();
-                            });
-
-                            // 自动消失
-                            setTimeout(() => {
-                                notification.remove();
-                            }, 10000);
+                            alert(`🎉 Submission completed!\n\nScore: ${score}\nCR: ${cr}\nPRD: ${prd}\n\nCheck the leaderboard to see your ranking!`);
                         }
                     }, 1000);
                 }
@@ -2134,5 +2085,12 @@ async function updateSubmissionsDisplay() {
 // Add missing toggleAuthMode function for compatibility
 function toggleAuthMode(mode) {
     showForm(mode);
+}
+
+// Safe number conversion function
+function safeToFixed(value, decimals = 1) {
+    if (value === null || value === undefined || value === '') return 'N/A';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(num) ? 'N/A' : num.toFixed(decimals);
 }
 

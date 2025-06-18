@@ -1,2 +1,4 @@
 teamName,email,password,registeredDate,totalSubmissions,bestScore
 string,user@example.com,$2b$12$ZjeUXE2z7SXIiR7q2C8vReZ/KecWQIVY2JBR2IeO7dPk/vQYuRxkq,2025-06-08T19:04:21.879801,0,0.0
+Example,test@example.com,$2b$12$j5MerJssSktyta.erwR7IuY944IVdtKtEMIyBGUTCAVyE/ocsq6si,2025-06-17T23:20:20.602234,4,115.9
+Test,test@example.com,$2b$12$YvgEo2nOEwZJBjGVloiIxeCU5o2GL9YIE1Sfj226OGX8AVKBVwJ4y,2025-06-17T23:52:55.272419,6,121.2
