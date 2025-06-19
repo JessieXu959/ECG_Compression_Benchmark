@@ -104,6 +104,26 @@ def get_user(team_name: str) -> Optional[Dict[str, Any]]:
                     return user
         return None
 
+def get_all_users() -> List[Dict[str, Any]]:
+    """Get all users data"""
+    storage = StorageManager(STORAGE_TYPE)
+
+    if storage.storage_type == "csv":
+        if not USERS_FILE.exists():
+            return []
+
+        users = []
+        with open(USERS_FILE, 'r') as f:
+            for user in csv.DictReader(f):
+                # Remove password for security
+                user_safe = user.copy()
+                if 'password' in user_safe:
+                    del user_safe['password']
+                users.append(user_safe)
+        return users
+
+    return []
+
 # Storage functions for submissions
 def save_submission(submission_id: str, submission_data: Dict[str, Any]):
     """Save submission data"""

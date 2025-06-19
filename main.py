@@ -25,7 +25,7 @@ from passlib.context import CryptContext
 
 # Import our custom modules
 from storage import (
-    save_user, get_user, save_submission, get_submissions,
+    save_user, get_user, get_all_users, save_submission, get_submissions,
     update_submission_status, get_user_submissions, get_leaderboard,
     delete_user_data
 )
@@ -212,6 +212,15 @@ async def login_user(user: UserLogin):
             "teamName": stored_user['teamName'],
             "email": stored_user['email']
         }
+    }
+
+@app.get("/api/users")
+async def get_all_users_endpoint():
+    """Get all registered users (without passwords)"""
+    users = get_all_users()
+    return {
+        "users": users,
+        "total": len(users)
     }
 
 @app.post("/api/submit-to-codabench", response_model=SubmissionResponse)
