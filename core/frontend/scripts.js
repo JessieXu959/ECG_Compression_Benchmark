@@ -24,7 +24,7 @@ async function loadGlobalStats() {
     console.log('📊 Loading global performance statistics...');
     try {
         const response = await fetch(`${API_BASE_URL}/global-stats`);
-        
+
         if (!response.ok) {
             console.error('Failed to fetch global stats:', response.status);
             return;
@@ -80,7 +80,7 @@ function updateMetricsDisplay(stats) {
 // Show error state for metrics
 function showErrorMetrics() {
     console.log('⚠️ Showing error state for metrics');
-    
+
     const elements = [
         { id: 'topCompressionRatio', value: 'Error' },
         { id: 'topCompressionTeam', value: 'Unable to load' },
@@ -444,7 +444,7 @@ async function updateLeaderboard() {
         const leaderboardTable = document.querySelector('.leaderboard-table tbody');
         const fullLeaderboard = document.getElementById('fullLeaderboard');
         const targetTable = leaderboardTable || fullLeaderboard;
-        
+
         if (targetTable) {
             if (!data.results || data.results.length === 0) {
                 console.log('📊 No leaderboard results, showing empty state');
@@ -483,7 +483,7 @@ function showEmptyLeaderboard() {
     const leaderboardTable = document.querySelector('.leaderboard-table tbody');
     const fullLeaderboard = document.getElementById('fullLeaderboard');
     const targetTable = leaderboardTable || fullLeaderboard;
-    
+
     if (targetTable) {
         targetTable.innerHTML = `
             <tr>
@@ -966,17 +966,26 @@ async function updatePersonalStats() {
         const userSubmissions = await getUserSubmissionsFromBackend();
         const completedSubmissions = userSubmissions.filter(sub => sub.status === 'completed');
 
+        console.log(`📊 Processing ${completedSubmissions.length} completed submissions for stats`);
+
         const totalSubs = userSubmissions.length;
         const bestScore = completedSubmissions.length > 0 ?
-            Math.max(...completedSubmissions.map(sub => sub.score || 0)) : 0;
-        const avgScore = completedSubmissions.length > 0 ?
-            completedSubmissions.reduce((sum, sub) => sum + (sub.score || 0), 0) / completedSubmissions.length : 0;
+            Math.max(...completedSubmissions.map(sub => parseFloat(sub.score) || 0)) : 0;
+
+        // Calculate average score with better handling
+        let avgScore = 0;
+        if (completedSubmissions.length > 0) {
+            const scores = completedSubmissions.map(sub => parseFloat(sub.score) || 0);
+            const totalScore = scores.reduce((sum, score) => sum + score, 0);
+            avgScore = totalScore / completedSubmissions.length;
+            console.log(`📊 Average calculation: ${totalScore} / ${completedSubmissions.length} = ${avgScore}`);
+        }
 
         // Get best CR and PRD from submissions
         const bestCR = completedSubmissions.length > 0 ?
-            Math.max(...completedSubmissions.map(sub => sub.metrics?.CR || 0)) : 0;
+            Math.max(...completedSubmissions.map(sub => parseFloat(sub.metrics?.CR) || 0)) : 0;
         const bestPRD = completedSubmissions.length > 0 ?
-            Math.min(...completedSubmissions.map(sub => sub.metrics?.PRD || Infinity)) : 0;
+            Math.min(...completedSubmissions.map(sub => parseFloat(sub.metrics?.PRD) || Infinity)) : 0;
 
         // Get current rank from leaderboard
         const currentRank = await getUserRankFromLeaderboard();
@@ -985,14 +994,19 @@ async function updatePersonalStats() {
         const elements = {
             'totalSubmissions': totalSubs.toString(),
             'bestScore': safeToFixed(bestScore, 1),
-            'averageScore': safeToFixed(avgScore, 1),
+            'averageScore': safeToFixed(avgScore, 3),
             'currentRank': currentRank || '-'
         };
+
+        console.log('📊 Updating personal stats elements:', elements);
 
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
                 element.textContent = value;
+                console.log(`✅ Updated ${id}: ${value}`);
+            } else {
+                console.warn(`⚠️ Element not found: ${id}`);
             }
         });
 
@@ -1007,11 +1021,17 @@ async function updatePersonalStats() {
 }
 
 function clearPersonalStats() {
-    const elements = ['totalSubmissions', 'bestScore', 'averageScore', 'currentRank'];
-    elements.forEach(id => {
+    const elements = {
+        'totalSubmissions': '0',
+        'bestScore': '0.0',
+        'averageScore': 'N/A',
+        'currentRank': '-'
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
         const element = document.getElementById(id);
         if (element) {
-            element.textContent = '0';
+            element.textContent = value;
         }
     });
 }
@@ -2212,7 +2232,9 @@ function toggleAuthMode(mode) {
 function safeToFixed(value, decimals = 1) {
     if (value === null || value === undefined || value === '') return 'N/A';
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(num) ? 'N/A' : num.toFixed(decimals);
+    if (isNaN(num)) return 'N/A';
+    // Handle zero values properly - zero is a valid score
+    return num.toFixed(decimals);
 }
 
 // Global statistics management
@@ -2243,7 +2265,7 @@ async function updateGlobalStatistics() {
 function startGlobalStatsRefresh() {
     // Update immediately
     updateGlobalStatistics();
-    
+
     // Then update every 30 seconds
     setInterval(() => {
         updateGlobalStatistics();
