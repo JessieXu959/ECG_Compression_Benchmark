@@ -390,6 +390,93 @@ async def get_user_submissions_endpoint(
     user_submissions = get_user_submissions(team_name)
     return {"submissions": user_submissions}
 
+@app.get("/api/global-stats")
+async def get_global_stats():
+    """Get global performance statistics for the homepage metrics"""
+    try:
+        # Get all completed submissions
+        submissions = get_submissions()
+        completed_submissions = [
+            sub for sub in submissions
+            if sub.get("status") == "completed" and float(sub.get("score", 0)) > 0
+        ]
+
+        if not completed_submissions:
+            # Return default values when no submissions exist
+            return {
+                "topCompressionRatio": {
+                    "value": "N/A",
+                    "team": "No submissions yet"
+                },
+                "bestPRD": {
+                    "value": "N/A",
+                    "team": "No submissions yet"
+                },
+                "averageScore": "N/A",
+                "activeTeams": 0,
+                "totalSubmissions": 0
+            }
+
+        # Calculate metrics
+        best_cr = 0
+        best_cr_team = ""
+        best_prd = float('inf')
+        best_prd_team = ""
+        total_score = 0
+        team_names = set()
+
+        for sub in completed_submissions:
+            team_names.add(sub.get('teamName', 'Unknown'))
+            metrics = sub.get('metrics', {})
+            score = float(sub.get('score', 0))
+            total_score += score
+
+            # Track best compression ratio
+            cr = float(metrics.get('CR', 0))
+            if cr > best_cr:
+                best_cr = cr
+                best_cr_team = sub.get('teamName', 'Unknown')
+
+            # Track best PRD (lowest is best)
+            prd = float(metrics.get('PRD', float('inf')))
+            if prd < best_prd:
+                best_prd = prd
+                best_prd_team = sub.get('teamName', 'Unknown')
+
+        # Calculate average score
+        avg_score = total_score / len(completed_submissions) if completed_submissions else 0
+
+        # Format the response
+        return {
+            "topCompressionRatio": {
+                "value": f"{best_cr:.1f}:1" if best_cr > 0 else "N/A",
+                "team": best_cr_team if best_cr > 0 else "No submissions yet"
+            },
+            "bestPRD": {
+                "value": f"{best_prd:.3f}%" if best_prd != float('inf') else "N/A",
+                "team": best_prd_team if best_prd != float('inf') else "No submissions yet"
+            },
+            "averageScore": f"{avg_score:.3f}" if avg_score > 0 else "N/A",
+            "activeTeams": len(team_names),
+            "totalSubmissions": len(completed_submissions)
+        }
+
+    except Exception as e:
+        print(f"❌ Global stats error: {str(e)}")
+        return {
+            "topCompressionRatio": {
+                "value": "Error",
+                "team": "System error"
+            },
+            "bestPRD": {
+                "value": "Error",
+                "team": "System error"
+            },
+            "averageScore": "Error",
+            "activeTeams": 0,
+            "totalSubmissions": 0
+        }
+
 @app.delete("/api/user/{team_name}")
 async def delete_user_account(
     team_name: str,

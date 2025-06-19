@@ -14,9 +14,89 @@ const API_CONFIG = {
         SUBMIT: '/submit-to-codabench',
         LEADERBOARD: '/leaderboard',
         SUBMISSION_STATUS: '/submission-status',
-        USER_SUBMISSIONS: '/user-submissions'
+        USER_SUBMISSIONS: '/user-submissions',
+        GLOBAL_STATS: '/global-stats'
     }
 };
+
+// Load global statistics for Performance Metrics section
+async function loadGlobalStats() {
+    console.log('📊 Loading global performance statistics...');
+    try {
+        const response = await fetch(`${API_BASE_URL}/global-stats`);
+        
+        if (!response.ok) {
+            console.error('Failed to fetch global stats:', response.status);
+            return;
+        }
+
+        const stats = await response.json();
+        console.log('📊 Global stats received:', stats);
+
+        // Update Performance Metrics display
+        updateMetricsDisplay(stats);
+
+    } catch (error) {
+        console.error('❌ Error loading global stats:', error);
+        showErrorMetrics();
+    }
+}
+
+// Update the Performance Metrics display with real data
+function updateMetricsDisplay(stats) {
+    console.log('🔄 Updating metrics display with real data...');
+
+    // Update Top Compression Ratio
+    const topCRElement = document.getElementById('topCompressionRatio');
+    const topCRTeamElement = document.getElementById('topCompressionTeam');
+    if (topCRElement && topCRTeamElement) {
+        topCRElement.textContent = stats.topCompressionRatio.value;
+        topCRTeamElement.textContent = stats.topCompressionRatio.team;
+    }
+
+    // Update Best PRD
+    const bestPRDElement = document.getElementById('bestPRD');
+    const bestPRDTeamElement = document.getElementById('bestPRDTeam');
+    if (bestPRDElement && bestPRDTeamElement) {
+        bestPRDElement.textContent = stats.bestPRD.value;
+        bestPRDTeamElement.textContent = stats.bestPRD.team;
+    }
+
+    // Update Average Score
+    const avgScoreElement = document.getElementById('globalAverageScore');
+    if (avgScoreElement) {
+        avgScoreElement.textContent = stats.averageScore;
+    }
+
+    // Update Active Teams
+    const activeTeamsElement = document.getElementById('activeTeams');
+    if (activeTeamsElement) {
+        activeTeamsElement.textContent = stats.activeTeams;
+    }
+
+    console.log('✅ Metrics display updated successfully');
+}
+
+// Show error state for metrics
+function showErrorMetrics() {
+    console.log('⚠️ Showing error state for metrics');
+    
+    const elements = [
+        { id: 'topCompressionRatio', value: 'Error' },
+        { id: 'topCompressionTeam', value: 'Unable to load' },
+        { id: 'bestPRD', value: 'Error' },
+        { id: 'bestPRDTeam', value: 'Unable to load' },
+        { id: 'globalAverageScore', value: 'Error' },
+        { id: 'activeTeams', value: 'Error' }
+    ];
+
+    elements.forEach(elem => {
+        const element = document.getElementById(elem.id);
+        if (element) {
+            element.textContent = elem.value;
+        }
+    });
+}
 
 // Token management functions
 function getAuthToken() {
@@ -332,16 +412,13 @@ function updateAuthState() {
 async function updateLeaderboard() {
     console.log('📊 Fetching real leaderboard data...');
     const token = getAuthToken();
-    if (!token) {
-        console.log('⚠️ No auth token, showing empty leaderboard');
-        showEmptyLeaderboard();
-        return;
-    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/leaderboard`, {
-            headers: {
+            headers: token ? {
                 'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            } : {
                 'Content-Type': 'application/json'
             }
         });
@@ -354,8 +431,8 @@ async function updateLeaderboard() {
                 console.log('⚠️ Token invalid during fetch, clearing');
                 removeAuthToken();
                 updateAuthState();
-                showEmptyLeaderboard();
-                return;
+                // Try again without token for public leaderboard
+                return updateLeaderboard();
             }
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -365,14 +442,17 @@ async function updateLeaderboard() {
 
         // Update leaderboard table
         const leaderboardTable = document.querySelector('.leaderboard-table tbody');
-        if (leaderboardTable) {
+        const fullLeaderboard = document.getElementById('fullLeaderboard');
+        const targetTable = leaderboardTable || fullLeaderboard;
+        
+        if (targetTable) {
             if (!data.results || data.results.length === 0) {
                 console.log('📊 No leaderboard results, showing empty state');
                 showEmptyLeaderboard();
             } else {
                 console.log(`📊 Rendering ${data.results.length} leaderboard entries`);
                 const leaderboardBody = data.results.map((entry, index) => {
-                    const isCurrentTeam = entry.participant_name === (currentTeam || '');
+                    const isCurrentTeam = token && entry.participant_name === (currentTeam || '');
                     console.log(`📊 Processing entry ${index + 1}: ${entry.participant_name}, Score: ${entry.score}, Current team: ${isCurrentTeam}`);
 
                     return `
@@ -382,11 +462,12 @@ async function updateLeaderboard() {
                             <td>${safeToFixed(entry.scores?.CR, 1)}</td>
                             <td>${safeToFixed(entry.scores?.PRD, 4)}</td>
                             <td>${safeToFixed(entry.scores?.Score || entry.score, 1)}</td>
+                            <td>${entry.last_submission_date ? formatDate(entry.last_submission_date) : 'N/A'}</td>
                         </tr>
                     `;
                 }).join('');
 
-                leaderboardTable.innerHTML = leaderboardBody;
+                targetTable.innerHTML = leaderboardBody;
                 console.log('✅ Leaderboard table updated successfully');
             }
         } else {
@@ -400,10 +481,13 @@ async function updateLeaderboard() {
 
 function showEmptyLeaderboard() {
     const leaderboardTable = document.querySelector('.leaderboard-table tbody');
-    if (leaderboardTable) {
-        leaderboardTable.innerHTML = `
+    const fullLeaderboard = document.getElementById('fullLeaderboard');
+    const targetTable = leaderboardTable || fullLeaderboard;
+    
+    if (targetTable) {
+        targetTable.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">
+                <td colspan="6" style="text-align: center; color: #666; padding: 2rem;">
                     No submissions yet. Be the first to submit!
                 </td>
             </tr>
@@ -1586,8 +1670,8 @@ function initializePage() {
     updateTeamDisplay();
     updateProfileDisplay();
 
-    // Update global statistics (regardless of login status)
-    updateGlobalStatistics();
+    // Start global statistics refresh (updates immediately and then every 30 seconds)
+    startGlobalStatsRefresh();
 
     // Load real data if user is logged in
     if (getAuthToken() && currentTeam) {
@@ -2138,57 +2222,32 @@ async function updateGlobalStatistics() {
         const response = await fetch(`${API_BASE_URL}/global-stats`);
 
         if (response.ok) {
-            const data = await response.json();
-            console.log('✅ Global statistics received:', data);
+            const stats = await response.json();
+            console.log('✅ Global statistics received:', stats);
 
-            // Update global metrics
-            const elements = {
-                'globalAverageScore': data.score_statistics?.average_score || 0,
-                'activeTeams': data.global_metrics?.active_teams || 0,
-                'topCompressionRatio': data.performance_metrics?.best_compression_ratio || 0,
-                'bestPRD': data.performance_metrics?.best_prd || 0
-            };
-
-            // Update DOM elements
-            Object.entries(elements).forEach(([id, value]) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    if (id === 'globalAverageScore') {
-                        element.textContent = value > 0 ? safeToFixed(value, 1) : 'N/A';
-                    } else if (id === 'topCompressionRatio') {
-                        element.textContent = value > 0 ? `${safeToFixed(value, 1)}:1` : 'N/A';
-                    } else if (id === 'bestPRD') {
-                        element.textContent = value > 0 ? `${safeToFixed(value, 4)}%` : 'N/A';
-                    } else {
-                        element.textContent = value.toString();
-                    }
-                }
-            });
-
-            // Update team names if we have leaderboard data
-            await updateTopPerformers();
+            // Update Performance Metrics display using our new API structure
+            updateMetricsDisplay(stats);
 
             console.log('✅ Global statistics updated successfully');
         } else {
             console.warn('⚠️ Failed to fetch global statistics:', response.status);
+            showErrorMetrics();
         }
     } catch (error) {
         console.error('❌ Error fetching global statistics:', error);
-        // Set fallback values
-        const fallbackElements = {
-            'globalAverageScore': 'N/A',
-            'activeTeams': '0',
-            'topCompressionRatio': 'N/A',
-            'bestPRD': 'N/A'
-        };
-
-        Object.entries(fallbackElements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
-        });
+        showErrorMetrics();
     }
+}
+
+// Refresh global statistics periodically (every 30 seconds)
+function startGlobalStatsRefresh() {
+    // Update immediately
+    updateGlobalStatistics();
+    
+    // Then update every 30 seconds
+    setInterval(() => {
+        updateGlobalStatistics();
+    }, 30000); // 30 seconds
 }
 
 // Update top performers from leaderboard
