@@ -223,6 +223,25 @@ async def get_all_users_endpoint():
         "total": len(users)
     }
 
+@app.get("/api/all-submissions")
+async def get_all_submissions_endpoint():
+    """Get all submissions (for admin/demo purposes)"""
+    submissions = get_submissions()
+    # Remove file paths for security
+    safe_submissions = []
+    for sub in submissions:
+        safe_sub = sub.copy()
+        if 'filePath' in safe_sub:
+            del safe_sub['filePath']
+        if 'fileHash' in safe_sub:
+            del safe_sub['fileHash']
+        safe_submissions.append(safe_sub)
+
+    return {
+        "submissions": safe_submissions,
+        "total": len(safe_submissions)
+    }
+
 @app.post("/api/submit-to-codabench", response_model=SubmissionResponse)
 async def submit_algorithm(
     background_tasks: BackgroundTasks,
