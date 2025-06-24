@@ -2308,3 +2308,64 @@ async function updateTopPerformers() {
     }
 }
 
+// Download Starter Kit function
+async function downloadStarterKit() {
+    try {
+        console.log('📥 Starting Starter Kit download...');
+
+        // Show loading feedback
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<span>⏳</span> Downloading...';
+        button.disabled = true;
+
+        // Call the download API
+        const response = await fetch(`${API_BASE_URL}/download/starter-kit`);
+
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.status}`);
+        }
+
+        // Get the file blob
+        const blob = await response.blob();
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'ECG_Compression_Starter_Kit.zip';
+
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Clean up
+        window.URL.revokeObjectURL(url);
+
+        console.log('✅ Starter Kit downloaded successfully');
+
+        // Show success feedback
+        button.innerHTML = '<span>✅</span> Downloaded!';
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Error downloading Starter Kit:', error);
+
+        // Show error feedback
+        const button = event.target;
+        button.innerHTML = '<span>❌</span> Error';
+        setTimeout(() => {
+            button.innerHTML = '<span>📥</span> Download Starter Kit';
+            button.disabled = false;
+        }, 3000);
+
+        // Show error message
+        alert('Failed to download Starter Kit. Please try again or contact support.');
+    }
+}
+

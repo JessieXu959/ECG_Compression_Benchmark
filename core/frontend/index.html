@@ -481,6 +481,73 @@
             </div>
         </div>
 
+        <!-- Starter Kit Download Section -->
+        <div class="starter-kit-section" style="background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; color: white;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <span style="font-size: 2.5rem;">📁</span>
+                <div>
+                    <h3 style="margin: 0; color: white;">🚀 Starter Kit Download</h3>
+                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 1.1rem;">
+                        Get started quickly with our comprehensive starter package!
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="margin: 0 0 1rem 0; color: white;">📦 What's included:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Standard algorithm template (ecg_model.py)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Backup interface (solve.py)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Dependencies list (requirements.txt)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Complete documentation (README.md)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Example algorithms (Simple & Wavelet)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>✅</span>
+                        <span>Test data generator</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                <button onclick="downloadStarterKit()"
+                   class="btn"
+                   style="background: white; color: var(--primary); border: none; font-weight: 600; padding: 1rem 2rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 6px; transition: all 0.3s ease; cursor: pointer;"
+                   onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    <span>📥</span>
+                    Download Starter Kit
+                </button>
+
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                    <span>💡 First time? Start here!</span><br>
+                    <span>📏 File size: ~25KB</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.1); border-radius: 6px; border-left: 4px solid white;">
+                <p style="margin: 0; font-size: 0.95rem; opacity: 0.9;">
+                    <strong>💡 Quick Start:</strong>
+                    Extract the ZIP file, read the README.md, modify ecg_model.py with your algorithm,
+                    test locally, then ZIP and submit below!
+                </p>
+            </div>
+        </div>
+
         <!-- Submission Form -->
         <div class="submission-form-section">
             <h3>📤 Submit New Algorithm</h3>
@@ -496,6 +563,67 @@
                     <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
                         Upload your algorithm implementation as a ZIP file (max 50MB)
                     </small>
+
+                    <!-- Detailed file structure requirements -->
+                    <div style="margin-top: 1rem; padding: 1rem; background: var(--surface); border-radius: 6px; border-left: 3px solid var(--primary);">
+                        <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--primary);">📋 Required File Structure:</p>
+                        <div style="font-family: 'Courier New', monospace; font-size: 0.85rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin: 0.5rem 0;">
+                            algorithm.zip<br>
+                            ├── <strong>ecg_model.py</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 🔴 Required: Main algorithm file<br>
+                            ├── requirements.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 🟡 Optional: Dependencies<br>
+                            ├── solve.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 🟡 Optional: Backup interface<br>
+                            └── other_files/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 🟡 Optional: Additional files
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem;">
+                            <div style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span style="color: #e74c3c;">🔴</span>
+                                <span><strong>ecg_model.py</strong> is mandatory</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span style="color: #f39c12;">🟡</span>
+                                <span>Other files are optional</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span style="color: #2ecc71;">✅</span>
+                                <span>Use the Starter Kit template above</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span style="color: #3498db;">ℹ️</span>
+                                <span>Must implement ECGCompressor class</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick validation checklist -->
+                    <details style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem;">
+                            📝 Pre-submission Checklist
+                        </summary>
+                        <div style="margin-top: 0.75rem;">
+                            <div style="display: grid; gap: 0.4rem; font-size: 0.9rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" style="margin: 0;">
+                                    <span>✅ Downloaded and used the Starter Kit template</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" style="margin: 0;">
+                                    <span>✅ Implemented ECGCompressor class in ecg_model.py</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" style="margin: 0;">
+                                    <span>✅ Method compress_and_reconstruct returns (signal, ratio)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" style="margin: 0;">
+                                    <span>✅ Tested locally with test data (compression ratio > 1.0)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" style="margin: 0;">
+                                    <span>✅ ZIP file contains all necessary files</span>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Paper Submission Section -->

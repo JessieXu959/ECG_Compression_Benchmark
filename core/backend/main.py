@@ -18,9 +18,10 @@ from typing import List, Dict, Optional, Any
 import tempfile
 import csv
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Header
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 # Configuration
@@ -29,15 +30,37 @@ TEMP_DIR = Path("temp")
 SCORING_DIR = Path("scoring")
 DATA_DIR = Path("data")
 
+# Add security scheme for JWT Bearer tokens
+security = HTTPBearer()
+
 # Create directories if they don't exist
 for directory in [UPLOAD_DIR, TEMP_DIR, SCORING_DIR, DATA_DIR]:
     directory.mkdir(exist_ok=True)
 
-# Initialize FastAPI app
+# Initialize FastAPI app with security configuration
 app = FastAPI(
     title="ECG Compression Challenge Backend",
     description="Mini backend for ECG compression algorithm evaluation",
-    version="1.0.0"
+    version="1.0.0",
+    # Add security definitions for Swagger UI
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User registration, login, and token management"
+        },
+        {
+            "name": "Submissions",
+            "description": "Algorithm submission and evaluation"
+        },
+        {
+            "name": "Data",
+            "description": "Leaderboard, statistics, and user data"
+        },
+        {
+            "name": "Admin",
+            "description": "Administrative functions (admin only)"
+        }
+    ]
 )
 
 # Add CORS middleware
@@ -68,6 +91,9 @@ class SubmissionResponse(BaseModel):
 users_db = {}
 submissions_db = {}
 
+# Admin users list (in production, store this in database)
+ADMIN_USERS = ["admin", "Administrator", "teamA", "XuJinxi"]  # Add your admin team names here
+
 def load_data_from_csv():
     """Load existing data from CSV files"""
     # Load users from CSV
@@ -84,7 +110,8 @@ def load_data_from_csv():
                             "password": row.get('password', ''),
                             "created_at": row.get('registrationDate', ''),
                             "totalSubmissions": int(row.get('totalSubmissions', 0)),
-                            "bestScore": float(row.get('bestScore', 0))
+                            "bestScore": float(row.get('bestScore', 0)),
+                            "is_admin": team_name in ADMIN_USERS  # Add admin flag
                         }
             print(f"✅ Loaded {len(users_db)} users from CSV")
         except Exception as e:
@@ -174,14 +201,14 @@ def clear_demo_data():
     print(f"🧹 Cleared demo data. Keeping {len(real_teams)} real teams.")
     return len(to_remove)
 
-# Simple token validation
-def get_current_user(authorization: str = Header(None)):
-    """Extract user from Authorization header"""
-    if not authorization:
+# Enhanced token validation with admin support
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Extract user from JWT token and determine admin status"""
+    if not credentials:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-        token = authorization.replace("Bearer ", "")
+        token = credentials.credentials
 
         # Check if it's a JWT token
         if "." in token and len(token.split(".")) == 3:
@@ -199,12 +226,21 @@ def get_current_user(authorization: str = Header(None)):
                 payload = base64.b64decode(payload_b64)
                 user_data = json.loads(payload)
 
+                team_name = None
                 if "teamName" in user_data:
-                    return {"teamName": user_data["teamName"]}
+                    team_name = user_data["teamName"]
                 elif "team_name" in user_data:
-                    return {"teamName": user_data["team_name"]}
+                    team_name = user_data["team_name"]
                 else:
                     raise HTTPException(status_code=401, detail="Invalid token format")
+
+                # Return user info with admin status
+                return {
+                    "team_name": team_name,
+                    "teamName": team_name,
+                    "email": user_data.get("email", ""),
+                    "is_admin": team_name in ADMIN_USERS
+                }
 
             except Exception as e:
                 print(f"JWT decode error: {e}")
@@ -217,7 +253,12 @@ def get_current_user(authorization: str = Header(None)):
                 team_name = "_".join(parts[1:-1])  # Handle team names with underscores
                 if not team_name:  # If team name is empty, take the last part minus timestamp
                     team_name = parts[-2] if len(parts) > 2 else parts[1]
-                return {"teamName": team_name}
+
+                return {
+                    "team_name": team_name,
+                    "teamName": team_name,
+                    "is_admin": team_name in ADMIN_USERS
+                }
 
         raise HTTPException(status_code=401, detail="Invalid token format")
     except HTTPException:
@@ -227,13 +268,15 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def create_jwt_token(team_name: str, email: str) -> str:
-    """Create a simple JWT-like token"""
+    """Create a simple JWT-like token with admin info"""
     import time
 
-    # Create payload
+    # Create payload with admin status
     payload = {
         "teamName": team_name,
+        "team_name": team_name,
         "email": email,
+        "is_admin": team_name in ADMIN_USERS,
         "iat": int(time.time()),
         "exp": int(time.time()) + (24 * 60 * 60)  # 24 hours
     }
@@ -250,7 +293,7 @@ def create_jwt_token(team_name: str, email: str) -> str:
 
     return f"{header_b64}.{payload_b64}.{signature}"
 
-@app.post("/api/register")
+@app.post("/api/register", tags=["Authentication"])
 async def register_user(user: UserRegister):
     """Register a new user/team"""
     if user.teamName in users_db:
@@ -262,7 +305,8 @@ async def register_user(user: UserRegister):
         "password": user.password,  # In production, hash this!
         "created_at": datetime.now().isoformat(),
         "totalSubmissions": 0,
-        "bestScore": 0.0
+        "bestScore": 0.0,
+        "is_admin": user.teamName in ADMIN_USERS  # Add admin flag
     }
 
     # Generate JWT token
@@ -272,12 +316,13 @@ async def register_user(user: UserRegister):
         "access_token": token,
         "user": {
             "teamName": user.teamName,
-            "email": user.email
+            "email": user.email,
+            "isAdmin": user.teamName in ADMIN_USERS
         },
         "message": "User registered successfully"
     }
 
-@app.post("/api/login")
+@app.post("/api/login", tags=["Authentication"])
 async def login_user(user: UserLogin):
     """Login user and return token"""
     if user.teamName not in users_db:
@@ -294,12 +339,13 @@ async def login_user(user: UserLogin):
         "access_token": token,
         "user": {
             "teamName": user.teamName,
-            "email": stored_user["email"]
+            "email": stored_user["email"],
+            "isAdmin": user.teamName in ADMIN_USERS
         },
         "message": "Login successful"
     }
 
-@app.post("/api/submit-to-codabench")
+@app.post("/api/submit-to-codabench", tags=["Submissions"])
 async def submit_algorithm(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -308,12 +354,11 @@ async def submit_algorithm(
     paper_authors: str = Form(""),
     paper_type: str = Form(""),
     paper_doi: str = Form(""),
-    authorization: str = Header(None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Submit algorithm for evaluation"""
 
-    # Get current user
-    current_user = get_current_user(authorization)
+    # Get team name from authenticated user
     team_name = current_user["teamName"]
 
     # Generate unique submission ID
@@ -558,7 +603,7 @@ async def run_simulated_evaluation(file_path: str) -> Dict[str, Any]:
             "evaluation_type": "simulated"
         }
 
-@app.get("/api/leaderboard")
+@app.get("/api/leaderboard", tags=["Data"])
 async def get_leaderboard():
     """Get current leaderboard"""
     try:
@@ -597,7 +642,7 @@ async def get_leaderboard():
         print(f"❌ Leaderboard error: {str(e)}")
         return {"results": []}
 
-@app.get("/api/global-stats")
+@app.get("/api/global-stats", tags=["Data"])
 async def get_global_statistics():
     """Get global competition statistics"""
     try:
@@ -682,7 +727,7 @@ async def get_global_statistics():
             "generated_at": datetime.now().isoformat()
         }
 
-@app.get("/api/submission-status/{submission_id}")
+@app.get("/api/submission-status/{submission_id}", tags=["Submissions"])
 async def get_submission_status(submission_id: str):
     """Get status of a specific submission"""
     if submission_id not in submissions_db:
@@ -698,14 +743,12 @@ async def get_submission_status(submission_id: str):
         "error": submission.get("error")
     }
 
-@app.get("/api/user-submissions/{team_name}")
+@app.get("/api/user-submissions/{team_name}", tags=["Submissions"])
 async def get_user_submissions(
     team_name: str,
-    authorization: str = Header(None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get submissions for a specific team"""
-    current_user = get_current_user(authorization)
-
     # Users can only access their own submissions
     if current_user["teamName"] != team_name:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -720,7 +763,7 @@ async def get_user_submissions(
 
     return {"submissions": user_submissions}
 
-@app.get("/health")
+@app.get("/health", tags=["System"])
 async def health_check():
     """Health check endpoint"""
     return {
@@ -732,7 +775,7 @@ async def health_check():
         "active_users": len(users_db)
     }
 
-@app.get("/api/test-codabench")
+@app.get("/api/test-codabench", tags=["System"])
 async def test_codabench_connection():
     """Test backend connection endpoint"""
     return {
@@ -743,7 +786,7 @@ async def test_codabench_connection():
         "backend_version": "1.0.0"
     }
 
-@app.post("/api/admin/clear-demo-data")
+@app.post("/api/admin/clear-demo-data", tags=["Admin"])
 async def clear_demo_data_endpoint():
     """Admin endpoint to clear demo data"""
     removed_count = clear_demo_data()
@@ -753,6 +796,165 @@ async def clear_demo_data_endpoint():
         "real_teams_kept": ["teamA"],
         "remaining_users": len(users_db),
         "remaining_submissions": len(submissions_db)
+    }
+
+@app.get("/api/download/starter-kit", tags=["Data"])
+async def download_starter_kit():
+    """下载Starter Kit文件"""
+    try:
+        # 构建starter_kit.zip的路径（相对于项目根目录）
+        current_dir = Path(__file__).parent.parent.parent  # 回到项目根目录
+        file_path = current_dir / "starter_kit.zip"
+
+        if file_path.exists():
+            # 使用FastAPI的FileResponse返回文件
+            return FileResponse(
+                path=str(file_path),
+                filename="ECG_Compression_Starter_Kit.zip",
+                media_type="application/zip"
+            )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Starter Kit文件不存在"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"下载失败: {str(e)}"
+        )
+
+# ===== USER MANAGEMENT & AUTHENTICATION ENDPOINTS =====
+
+@app.get("/api/users", tags=["Admin"])
+async def list_all_users(current_user: dict = Depends(get_current_user)):
+    """Get all users (admin only)"""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return {
+        "users": [
+            {
+                "teamName": team_name,
+                "email": user_data["email"],
+                "isAdmin": team_name in ADMIN_USERS,
+                "registeredAt": user_data.get("created_at", "N/A")
+            }
+            for team_name, user_data in users_db.items()
+        ],
+        "totalUsers": len(users_db)
+    }
+
+@app.get("/api/auth/verify", tags=["Authentication"])
+async def verify_token(current_user: dict = Depends(get_current_user)):
+    """Verify JWT token and return user info"""
+    return {
+        "valid": True,
+        "user": {
+            "teamName": current_user["team_name"],
+            "email": current_user.get("email", ""),
+            "isAdmin": current_user.get("is_admin", False)
+        }
+    }
+
+@app.post("/api/auth/refresh", tags=["Authentication"])
+async def refresh_token(current_user: dict = Depends(get_current_user)):
+    """Refresh JWT token"""
+    team_name = current_user["team_name"]
+    email = current_user.get("email", "")
+
+    new_token = create_jwt_token(team_name, email)
+
+    return {
+        "access_token": new_token,
+        "user": {
+            "teamName": team_name,
+            "email": email,
+            "isAdmin": current_user.get("is_admin", False)
+        }
+    }
+
+@app.get("/api/users/{team_name}", tags=["Data"])
+async def get_user_profile(team_name: str, current_user: dict = Depends(get_current_user)):
+    """Get specific user profile (self or admin)"""
+    if not current_user.get("is_admin") and current_user["team_name"] != team_name:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if team_name not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_data = users_db[team_name]
+    return {
+        "teamName": team_name,
+        "email": user_data["email"],
+        "isAdmin": team_name in ADMIN_USERS,
+        "registeredAt": user_data.get("created_at", "N/A")
+    }
+
+@app.put("/api/users/{team_name}", tags=["Data"])
+async def update_user_profile(team_name: str, update_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update user profile (self only)"""
+    if current_user["team_name"] != team_name:
+        raise HTTPException(status_code=403, detail="Can only update your own profile")
+
+    if team_name not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update allowed fields
+    if "email" in update_data:
+        users_db[team_name]["email"] = update_data["email"]
+
+    return {
+        "message": "Profile updated successfully",
+        "user": {
+            "teamName": team_name,
+            "email": users_db[team_name]["email"],
+            "isAdmin": team_name in ADMIN_USERS
+        }
+    }
+
+@app.delete("/api/users/{team_name}", tags=["Admin"])
+async def delete_user(team_name: str, current_user: dict = Depends(get_current_user)):
+    """Delete user account (admin only)"""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    if team_name not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    del users_db[team_name]
+
+    return {"message": f"User {team_name} deleted successfully"}
+
+@app.post("/api/auth/logout", tags=["Authentication"])
+async def logout_user(current_user: dict = Depends(get_current_user)):
+    """Logout user (client-side token removal)"""
+    return {
+        "message": "Logged out successfully",
+        "teamName": current_user["team_name"]
+    }
+
+@app.get("/api/admin/stats", tags=["Admin"])
+async def get_admin_stats(current_user: dict = Depends(get_current_user)):
+    """Get comprehensive platform statistics (admin only)"""
+    if not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    total_users = len(users_db)
+    admin_users = len([u for u in users_db.keys() if u in ADMIN_USERS])
+    total_submissions = len(submissions_db)
+
+    return {
+        "platform": {
+            "totalUsers": total_users,
+            "adminUsers": admin_users,
+            "regularUsers": total_users - admin_users,
+            "totalSubmissions": total_submissions
+        },
+        "recentActivity": {
+            "newUsersToday": 0,  # Would need timestamp tracking
+            "submissionsToday": 0  # Would need timestamp tracking
+        }
     }
 
 # Root endpoint
